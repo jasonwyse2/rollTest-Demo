@@ -14,6 +14,8 @@ import os
 
 from data.ProbabilityIndicator import get_probability_indicator
 
+slope_type = {'sharp':5,'gentle':4}
+trend_type = {'up': 1, 'down': 0}
 def get_indicators(close_price):
     """ """
     upper, middle, lower = talib.BBANDS(close_price,
@@ -57,69 +59,84 @@ def get_legal_input(indicators,statistics_len):
     return legal_input,cut_number
     
 #参数close：收盘价，windom_size：滤波窗长度，window_beta:滤波器参数， n:滤波次数
-def data_filter_n(close, window_size, window_beta, n):
-    
-    def data_filter(close, window_size, window_beta):
-        window = signal.kaiser(window_size, beta=window_beta)
-        close_filtered = signal.convolve(close, window, mode='same') / sum(window)
-        close_filtered_modify = list(close_filtered)[int(window_size/2):-int(window_size/2)]#
-        return close_filtered_modify
-    
-    init_datf = [close.values]
-    for i in range(n):
-        top = list(init_datf[i])[:2]
-        end = list(init_datf[i])[len(init_datf[i])-2:]
-        middle = list(data_filter(init_datf[i], 5, 2))
-        close_filtered_top_end = top + middle + end
-        init_datf.append(close_filtered_top_end)
+
+def data_filter_nTimes(close, window_size, window_beta, filterTimes):
+    def data_oneTime_filter(close, window_size, window_beta):
+
+        window_array = signal.kaiser(window_size, beta=window_beta)
+        close_filtered = signal.convolve(close, window_array, mode='same') / sum(window_array)
+        cutExtraDays_for_FilteredClose = list(close_filtered)[int(window_size / 2):-int(window_size / 2)]  #
+        return cutExtraDays_for_FilteredClose
+
+    #data_afterNTimesFilter_list = [close.values]
+    tmp_close = close
+    half_windowSize = int(window_size/2)
+    top_half_window = list(tmp_close)[:half_windowSize]
+    end_half_window = list(tmp_close)[-half_windowSize:]
+    for i in range(filterTimes):
+        # top_half_window = list(tmp_close)[:half_windowSize]
+        # end_half_window = list(tmp_close)[-half_windowSize:]
+        middle = list(data_oneTime_filter(tmp_close, window_size, window_beta))
+        close_filtered_top_end = top_half_window + middle + end_half_window
+        tmp_close = close_filtered_top_end
     #输出为n次滤波后的结果
-    return  init_datf[-1]
+    data_afterNTimesFilter = tmp_close
+    return  data_afterNTimesFilter
     
 #输入参数init_dat是n次滤波后的结果，使用时先调用data_filter_n函数，将data_filter_n函数返回的结果作为init_dat
-def tag_data_filter_n(init_dat):
+def tag_NTimesFilteredData(data_afterFilterNTimes):
         
-    l1 = init_dat[1:]
-    l2 = init_dat[:-1]
+    oneDayForward_list = data_afterFilterNTimes[1:]
+    zeroDayForward_list = data_afterFilterNTimes[:-1]
 
-    mane = [a-b for a, b in zip(l1,l2)]
-    y = [i for i in range(len(mane))]
-    tag = []
-    for i in range(len(mane)):
+    diff_list = [oneDay-zeroDay for oneDay, zeroDay in zip(oneDayForward_list,zeroDayForward_list)]
+
+    tag_for_upDown = []
+
+    for i in range(len(diff_list)):
         if i == 0:
-            if mane[i] > 0:
-                tag.append(1)
-            elif mane[i] < 0:
-                tag.append(0)
+            if diff_list[i] > 0:
+                tag_for_upDown.append(trend_type['up'])
+            elif diff_list[i] < 0:
+                tag_for_upDown.append(trend_type['down'])
         elif i > 0:
-            if mane[i] > 0:
-                tag.append(1)
-            elif mane[i] < 0:
-                tag.append(0)
-            elif mane[i-1] < 0 and mane[i+1] > 0:
-                tag.append(1)
-            elif mane[i-1] > 0 and mane[i+1] < 0:
-                tag.append(0)
+            if diff_list[i] > 0:
+                tag_for_upDown.append(trend_type['up'])
+            elif diff_list[i] < 0:
+                tag_for_upDown.append(trend_type['down'])
+            else:
+                if diff_list[i-1] < 0 and diff_list[i+1] > 0:
+                    tag_for_upDown.append(trend_type['up'])
+                elif diff_list[i - 1] < 0 and diff_list[i + 1] < 0:
+                    tag_for_upDown.append(trend_type['down'])
+                elif diff_list[i-1] > 0 and diff_list[i+1] < 0:
+                    tag_for_upDown.append(trend_type['down'])
+                elif diff_list[i-1] > 0 and diff_list[i+1] > 0:
+                    tag_for_upDown.append(trend_type['up'])
+                else:
+                    tag_for_upDown.append(trend_type['up'])
     
-    return  tag
+    return  tag_for_upDown
 
 
 # 输入参数，data_filter是函数data_filter_n的结果，tag_data_filter是函数tag_data_filter_n的结果，k_threshould是一个涨跌区间内，将当前状态定义为急和缓的阈值
-def k_state_tag(data_filter, tag_data_filter, k_threshold):
+def tag_sharpGentle(data_afterNTimesFilter, tag_for_upDown, slope_threshold):#data_afterNTimesFilter,tag_for_upDown
     change_loc = []
     change_loc.append(0)
-    for i in range(1, len(tag_data_filter)):
-        if tag_data_filter[i] == tag_data_filter[i - 1]:
+    #slope_type = {'sharp': 5, 'gentle': 4}
+    for i in range(1, len(tag_for_upDown)):
+        if tag_for_upDown[i] == tag_for_upDown[i - 1]:
             pass
-        elif tag_data_filter[i] != tag_data_filter[i - 1]:
+        elif tag_for_upDown[i] != tag_for_upDown[i - 1]:
             change_loc.append(i)
-    if change_loc[-1] == len(tag_data_filter) - 1:
+    if change_loc[-1] == len(tag_for_upDown) - 1:
         pass
     else:
-        change_loc.append(len(tag_data_filter) - 1)
+        change_loc.append(len(tag_for_upDown) - 1)
 
     change_loc_values = []
     for loc in change_loc:
-        change_loc_values.append(data_filter[loc])
+        change_loc_values.append(data_afterNTimesFilter[loc])
 
     k_s = []
     for i in range(len(change_loc) - 1):
@@ -127,10 +144,10 @@ def k_state_tag(data_filter, tag_data_filter, k_threshold):
         k_s.append(k)
     t_k = []
     for k in k_s:
-        if abs(k) >= k_threshold:
-            t_k.append(5)
+        if abs(k) >= slope_threshold:
+            t_k.append(slope_type['sharp'])
         else:
-            t_k.append(4)
+            t_k.append(slope_type['gentle'])
 
     tag_k = []
     for i in range(len(t_k)):
@@ -141,30 +158,34 @@ def k_state_tag(data_filter, tag_data_filter, k_threshold):
 
     return tag_k
 
-def tag_data(close,windom_size,window_beta,n,m,k_threshold):
-    init_datf = data_filter_n(close,windom_size,window_beta,n)
-    tag_filter = tag_data_filter_n(init_datf)
+def tag_data(close, window_size, window_beta, filterTimes_for_upDown, filterTimes_for_sharpGentle, slope_threshold):
+    data_afterNTimesFilter = data_filter_nTimes(close, window_size, window_beta, filterTimes_for_upDown)
+    ## there is no tag of 'upDown' for the last data
+    tag_for_upDown = tag_NTimesFilteredData(data_afterNTimesFilter)
+    ## there is no tag for the last data
+    tag_for_sharpGentle = tag_sharpGentle(data_afterNTimesFilter, tag_for_upDown, slope_threshold=slope_threshold)
 
-    init_datf_k = data_filter_n(close, windom_size, window_beta, m)
-    tag_filter_k = tag_data_filter_n(init_datf_k)
-    tag_k = k_state_tag(init_datf_k,tag_filter_k,k_threshold=k_threshold)
-
-    tupe_list = [(5,1),(5,0),(4,1),(4,0)]
-    tag_tuple = zip(tag_k,tag_filter)
-    tag = [tupe_list.index(v) for v in tag_tuple]
-    return tag,init_datf
+    # slope_type = {'sharp': 5, 'gentle': 4}
+    # trend_type = {'up': 1, 'down': 0}
+    tuple_list = [(slope_type['sharp'], trend_type['up']), (slope_type['sharp'], trend_type['down']),
+                 (slope_type['gentle'], trend_type['up']), (slope_type['gentle'], trend_type['down'])]
+    tag_tuple = zip(tag_for_sharpGentle,tag_for_upDown)
+    tag = [tuple_list.index(v) for v in tag_tuple]
+    return tag,data_afterNTimesFilter
     
 def get_datasets_2(close,parameter_dict,show_label=True):
     """
     it has already cut the top NTradeDays, which is used for calculating the indicators.
     But the data it returns contain the extra days for tagging data.
     """
-    window_size = parameter_dict['window_size']
-    window_beta = parameter_dict['window_beta']
-    n = parameter_dict['filter_times_of_direciton_object']
-    m = parameter_dict['filter_times_of_gradient_object']
-    k_threshold = parameter_dict['k_threshold']
-    raw_y ,init_datf= tag_data(close,windom_size=window_size,window_beta=window_beta,n=n,m=m,k_threshold=k_threshold)
+    window_size = parameter_dict['filter_windowSize']
+    window_beta = parameter_dict['kaiser_beta']
+    filterTimes_for_upDown = parameter_dict['filterTimes_for_upDown']
+    filterTimes_for_sharpGentle = parameter_dict['filterTimes_for_sharpGentle']
+    slope_threshold = parameter_dict['slope_threshold']
+    raw_y ,data_afterNTimesFilter = tag_data(close, window_size=window_size, window_beta=window_beta,
+                               filterTimes_for_upDown =filterTimes_for_upDown,
+                            filterTimes_for_sharpGentle =filterTimes_for_sharpGentle, slope_threshold=slope_threshold)
     raw_y = np.array(raw_y)
     close = np.array(close.tolist())
     pct = np.diff(close)/close[:-1]
@@ -181,28 +202,63 @@ def get_datasets_2(close,parameter_dict,show_label=True):
 
     labels = raw_y[NTradeDays_for_indicatorCalculation-1:]
     close_for_use = close[NTradeDays_for_indicatorCalculation:]
-    filter_data_for_use = init_datf[NTradeDays_for_indicatorCalculation:]
+    filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:]
     
     # print 'x',np.where(np.isnan(x))
     # print 'labels',set(labels)
-    import matplotlib.pyplot as plt
-    labels = labels.astype(int)
-    filter_data_for_use = np.array(filter_data_for_use)
-    if show_label:
-        fig = plt.figure()
-        plt.plot(range(close_for_use.shape[0]),filter_data_for_use)
-        plt.plot(range(close_for_use.shape[0]),close_for_use)
-        plt.scatter(np.where(labels == 0)[0],filter_data_for_use[np.where(labels==0)[0]],marker='o',c='r',label='0',s=30)
-        plt.scatter(np.where(labels == 1)[0], filter_data_for_use[np.where(labels == 1)[0]], marker='o',c='y',label='1',s=30)
-        plt.scatter(np.where(labels == 2)[0], filter_data_for_use[np.where(labels == 2)[0]], marker='o', c='b', label='2', s=30)
-        plt.scatter(np.where(labels == 3)[0], filter_data_for_use[np.where(labels == 3)[0]], marker='o', c='g', label='3', s=30)
-        plt.legend()
-        plt.show()
-    else:
-        pass
+    # import matplotlib.pyplot as plt
+    # labels = labels.astype(int)
+    # filter_data_for_use = np.array(filter_data_for_use)
+    # if show_label:
+    #     fig = plt.figure()
+    #     plt.plot(range(close_for_use.shape[0]),filter_data_for_use)
+    #     plt.plot(range(close_for_use.shape[0]),close_for_use)
+    #     plt.scatter(np.where(labels == 0)[0],filter_data_for_use[np.where(labels==0)[0]],marker='o',c='r',label='0',s=30)
+    #     plt.scatter(np.where(labels == 1)[0], filter_data_for_use[np.where(labels == 1)[0]], marker='o',c='y',label='1',s=30)
+    #     plt.scatter(np.where(labels == 2)[0], filter_data_for_use[np.where(labels == 2)[0]], marker='o', c='b', label='2', s=30)
+    #     plt.scatter(np.where(labels == 3)[0], filter_data_for_use[np.where(labels == 3)[0]], marker='o', c='g', label='3', s=30)
+    #     plt.legend()
+    #     plt.show()
+    # else:
+    #     pass
     # print 'figure plot!'
     return x,labels,close_for_use,filter_data_for_use
 
+
+def get_x_y(close, parameter_dict):
+    """
+    it has already cut the top NTradeDays, which is used for calculating the indicators.
+    But the data it returns contain the extra days for tagging data.
+    """
+    window_size = parameter_dict['filter_windowSize']
+    window_beta = parameter_dict['kaiser_beta']
+    filterTimes_for_upDown = parameter_dict['filterTimes_for_upDown']
+    filterTimes_for_sharpGentle = parameter_dict['filterTimes_for_sharpGentle']
+    slope_threshold = parameter_dict['slope_threshold']
+    extraTradeDays = parameter_dict['extraTradeDays_afterEndTime_for_filter']
+    ## there is no tag of 'upDown' for the last data and there is no data lost when filter data, so
+    ## 'data_afterNTimesFilter' has one more data than 'raw_y'
+    raw_y, data_afterNTimesFilter = tag_data(close, window_size=window_size, window_beta=window_beta,
+                                             filterTimes_for_upDown=filterTimes_for_upDown,
+                                             filterTimes_for_sharpGentle=filterTimes_for_sharpGentle,
+                                             slope_threshold=slope_threshold)
+    raw_y = np.array(raw_y)
+    close = np.array(close.tolist())
+    pct = np.diff(close) / close[:-1]
+    ### calculate indicators with log_return, other than 'close' price
+    raw_x = get_indicators(pct)
+
+    nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
+    NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
+    if NTradeDays_for_indicatorCalculation <= nan_num:
+        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN,i.e.%s' % str(nan_num ))
+    # shift one day when calculate 'pct'
+    x = raw_x[NTradeDays_for_indicatorCalculation - 1:-(extraTradeDays)]
+    labels = raw_y[NTradeDays_for_indicatorCalculation :-(extraTradeDays-1)]
+    close_for_use = close[NTradeDays_for_indicatorCalculation:-(extraTradeDays)]
+    filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:-(extraTradeDays)]
+
+    return x, labels, filter_data_for_use, close_for_use
 
 def get_balanced_datasets(x,y,parameter_dict):
     nb_class = parameter_dict['nb_class']
@@ -285,34 +341,7 @@ def get_balanced_shuffled_datasets(X,Y,parameter_dict):
 #
 #     return X, Y
 if __name__=='__main__':
-   # csv_path = "/home/zqfrgzn05/GenerateData_Model/Htargets/raw_data/original.csv"
-    
-    csv_path = '/mnt/aidata/生成数据/000905.SH_zscore/20050202-20141231.csv'
-    
-    raw_pct = pd.read_csv(csv_path,header=None).as_matrix()[:,:-1][0,:]
-    #raw_pct = pd.read_csv(csv_path).as_matrix()[:,:-1][:1200,:].reshape(-1)
-    print 'raw_pct shape', raw_pct.shape
-   
-    print  'ratio_of_sigma', '[positive,middle,negative]', 'positive/negaitve','(positive+negative)/all_sample', 'middle/all_sample'
-    for v in np.linspace(0.1,2,20):
-       
-        x,y = get_datasets_0(raw_pct,240,v)
-        len_positive = len(np.where(y==1)[0])
-        len_negative = len(np.where(y==-1)[0])
-        len_middle = len(np.where(y==0)[0])
-      
-        r_interested = float(len_positive+len_negative)/y.shape[0]
-        r_0 = 1 - r_interested
-        
-        print v,[len_positive,len_middle,len_negative],float(len_positive)/len_negative,r_interested,r_0
-        #print 'positive/negaitve:',float(len_positive)/len_negative
-        #print '(positive+negative)/all_sample:',r_interested, 'middle/all_sample:',r_0
-     
-        
-   # print 'train_x shape',train_x.shape
-   # print 'train_y shape',train_y.shape
-   # print 'valid_x shape',valid_x.shape
-   # print 'valid_y shape',valid_y.shape
+   pass
     
     
     
