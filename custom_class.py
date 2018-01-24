@@ -130,23 +130,25 @@ class Your_Data(base.Data):
 
         closeSeries_num = simulative_sample_matrix.shape[1]
         x_list, y_list = [], []
-        extraTradeDays = self._data_parameters_obj._args['extraTradeDays_afterEndTime_for_filter']
+        filtered_close_list, close_list = [], []
         for i in range(closeSeries_num):
             close_array = simulative_sample_matrix[:, i]
             close = pd.Series(close_array)
             x, y, filtered_close_for_use, close_for_use = get_x_y(close, self._data_parameters_obj._args)
-            ## show the figure
             # if dataType == 'valid':
             #     tool.show_fig(y, filtered_close_for_use, close_for_use)
-            #train_x, train_y = x[:-(extraTradeDays)], y[:-(extraTradeDays)]
             x_list.append(x)
             y_list.append(y)
+            filtered_close_list.append(filtered_close_for_use), close_list
         return x_list, y_list
 
 
     def _prepare_test_data(self):
         self._data_parameters_obj._args['dataType'] = 'test'
         df = tool.get_daily_data(self._data_parameters_obj._args)
+        extra_front = self._data_parameters_obj._args['NTradeDays_for_indicatorCalculation']
+        extra_end = self._data_parameters_obj._args['extraTradeDays_afterEndTime_for_filter']
+        self._test_x_date = df.date[extra_front:-extra_end]
         close_array = np.array(df['close'].tolist())
         close = pd.Series(close_array)
         # pct = np.diff(close_array) / close_array[:-1]
@@ -214,7 +216,7 @@ class Your_Data(base.Data):
             get_balanced_shuffled_datasets(train_x_ndarray, train_x_label_ndarray, parameter_dict)
         print 'balancedShuffled_train_x.shape', balancedShuffled_train_x.shape
         #balancedShuffled_valid_x, balancedShuffled_valid_y = \
-        #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, parameter_dict)
+        #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameter_dict)
         balancedShuffled_valid_x = valid_x_ndarray.reshape(-1, valid_x_ndarray.shape[1], 1, 1)
         balancedShuffled_valid_y = valid_x_label_ndarray
         #balancedShuffled_valid_x, balancedShuffled_valid_y = valid_x_ndarray, valid_x_label_ndarray
@@ -237,12 +239,12 @@ class Your_Data(base.Data):
     #     valid_x_ndarray, valid_x_label_ndarray = np.row_stack(valid_x_list), np.hstack(valid_y_list)
     #
     #     print 'train_x_ndarray', train_x_ndarray.shape
-    #     parameter_dict = self._data_parameters_obj._args
+    #     data_parameter_dict = self._data_parameters_obj._args
     #     balancedShuffled_train_x, balancedShuffled_train_y = \
-    #         get_balanced_shuffled_datasets(train_x_ndarray, train_x_label_ndarray, parameter_dict)
+    #         get_balanced_shuffled_datasets(train_x_ndarray, train_x_label_ndarray, data_parameter_dict)
     #     print 'balancedShuffled_train_x.shape', balancedShuffled_train_x.shape
     #     #balancedShuffled_valid_x, balancedShuffled_valid_y = \
-    #     #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, parameter_dict)
+    #     #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameter_dict)
     #     balancedShuffled_valid_x = valid_x_ndarray.reshape(-1, valid_x_ndarray.shape[1], 1, 1)
     #     balancedShuffled_valid_y = valid_x_label_ndarray
     #     #balancedShuffled_valid_x, balancedShuffled_valid_y = valid_x_ndarray, valid_x_label_ndarray
@@ -260,199 +262,19 @@ class Your_Model(base.Model):
     def _run(self):
         print('###################### model is running ######################')
         self._train()
-        train_confu_matrix_df, valid_confu_matrix_df = self._evaluate()
-        test_confu_matrix_df = self._test()
+        evaluate_returns = self._evaluate() #train_confuse_df, valid_confuse_df
+        test_returns = self._test()
         ####  save necessary results to file
         self.__write_parameter_to_file()
         ### delete the variables that do not use in the next round
         self._clean()
-        return train_confu_matrix_df, valid_confu_matrix_df, test_confu_matrix_df
+        return evaluate_returns, test_returns
     def _get_modelInput_from_generalInput(self,x,y):
 
         nb_classes = self._model_parameters_obj._args['nb_classes']
         y_categorical = to_categorical(y, num_classes=nb_classes)
         x_list, y_categorical_list = self.__from_x_to_xList(x, y_categorical)
         return x_list, y_categorical_list
-
-    def __CNN_block(self, out, filter_row, filter_col, nb_filter):
-        out_signal_layer = Convolution2D(nb_filter, filter_row, filter_col, init='normal', activation='relu',
-                                         border_mode='valid', W_regularizer=l2(0.001), subsample=(1, 1),
-                                         dim_ordering='tf', bias=True)  # ,W_constraint=maxnorm(m=1.2),
-        out_signal = out_signal_layer(out)
-        out_signal = BatchNormalization(axis=3)(out_signal)
-        # out_signal = Activation('relu')(out_signal)
-        out_signal = Dropout(0.1)(out_signal)
-        out_put_shape = out_signal_layer.output_shape
-        return out_signal
-
-
-    def __get_CNN_tenserflow_inputOutput(self):
-
-        data_obj = self._model_parameters_obj._args['data_obj']
-        nb_classes = self._model_parameters_obj._args['nb_classes']
-        train_x = data_obj._train_x
-        data_fit_example_shape = train_x.shape
-
-        '''
-        When using  this layer as the first layer in a model, provide the keyword argument `input_shape` (tuple of integers, does
-        not include the sample axis), e.g. `input_shape = (128, 128, 3)` for 128x128 RGB pictures in `data_format = "channels_last"
-        `.
-        '''
-        Input_shape = (data_fit_example_shape[1], data_fit_example_shape[2], 1)
-
-        filter_row = self._model_parameters_obj._args['filter_row']
-        filter_col = self._model_parameters_obj._args['filter_col']
-        filter_num = self._model_parameters_obj._args['filter_num']
-
-        input_list, output_list = [], []
-        input = Input(shape=Input_shape)
-        input_list.append(input)
-
-        normalize_input = BatchNormalization(axis=3)(input)
-        cov = self.__CNN_block(normalize_input, filter_row, filter_col, filter_num)
-
-        cov = self.__CNN_block(cov, filter_row, filter_col, filter_num)
-        cov = self.__CNN_block(cov, filter_row, filter_col, filter_num)
-        cov = self.__CNN_block(cov, filter_row, filter_col, filter_num)
-        cov = self.__CNN_block(cov, filter_row, filter_col, filter_num)
-
-        out_flat = Flatten()(cov)
-        out = Dense(nb_classes, activation='softmax')(out_flat)
-        output_list.append(out)
-
-        return input_list, output_list
-
-    # def __get_tenserflow_inputOutput(self):
-    #
-    #     nb_classes = self._model_parameters_obj._args['nb_classes']
-    #     data_obj = self._model_parameters_obj._args['data_obj']
-    #     train_x, train_y = data_obj._train_x, data_obj._train_y
-    #     valid_x, valid_y = data_obj._valid_x, data_obj._valid_y
-    #     nb_classes = self._model_parameters_obj._args['nb_classes']
-    #     train_y_categorical = to_categorical(train_y, num_classes=nb_classes)
-    #     valid_y_categorical = to_categorical(valid_y, num_classes=nb_classes)
-    #
-    #     data_fit_example_shape = train_x.shape
-    #
-    #     Input_shape = (1, data_fit_example_shape[2], data_fit_example_shape[3])
-    #     nb_input = data_fit_example_shape[1]
-    #     nb_layer = nb_input - 1
-    #
-    #     cov_list, input_list, output_list = [], [], []
-    #     for i in range(nb_input):
-    #         input = Input(shape=Input_shape)
-    #         input_list.append(input)
-    #         noise = BatchNormalization(axis=1)(input)
-    #         cov = self.__CNN_block(noise, 1, 1, 16)
-    #         cov_1 = self.__CNN_block(cov, 1, 1, 16)
-    #         x_out = Flatten()(cov)
-    #         cov_list.append(cov_1)
-    #         out = Dense(nb_classes, activation='softmax')(x_out)
-    #         output_list.append(out)
-    #     out = merge(cov_list, mode='concat', concat_axis=1)
-    #     for j in range(nb_layer):
-    #         out = self.__CNN_block(out, 2, 1, 16)
-    #     out_flat = Flatten()(out)
-    #     out = Dense(nb_classes, activation='softmax')(out_flat)
-    #     output_list.append(out)
-    #     return input_list, output_list
-
-    def __train(self):
-        # loss,acc, confusion_mat = im.train(train_x,train_y,valid_x,vliad_y,save_name,parameter_dict)
-        # return loss ,acc, confusion_mat
-        data_obj = self._model_parameters_obj._args['data_obj']
-        nb_classes = self._model_parameters_obj._args['nb_classes']
-        self._train_y_categorical = to_categorical(data_obj._train_y, num_classes=nb_classes)
-        self._valid_y_categorical = to_categorical(data_obj._valid_y, num_classes=nb_classes)
-        tenserflowInput_list, tenserflowOutput_list = self.__get_CNN_tenserflow_inputOutput()
-
-        model = Model(input=tenserflowInput_list, output=tenserflowOutput_list)
-
-
-        rmsprop = RMSprop(lr=0.001, rho=0.9, decay=0.99)
-
-        model.compile(loss='categorical_crossentropy', optimizer=rmsprop,
-                      metrics=['accuracy'])  # set loss function and optimizer #loss_weights=loss_weights,
-
-        modelFile_FullName, modelFile_name = self.__get_modelFileName()
-        modelcheck = ModelCheckpoint(modelFile_FullName, monitor='val_loss', save_best_only=True)
-        tensorboard = TensorBoard(log_dir='tensorboard', histogram_freq=0, write_graph=True)
-        train_epochs = self._model_parameters_obj._args['train_epoch']
-        batch_size = self._model_parameters_obj._args['batch_size']
-        # verbose=1: dynamicly show the progress, verbose=0: show nothing
-        model.fit(self._train_x, self._train_y_categorical, batch_size=batch_size, nb_epoch = train_epochs,
-                  verbose=1,
-                  validation_data=(self._valid_x, self._valid_y_categorical),
-                  callbacks=[modelcheck, tensorboard])
-        self._model = model
-
-    def __evaluate(self):
-        # loss,acc, confusion_mat = im.train(train_x,train_y,valid_x,vliad_y,save_name,parameter_dict)
-        # return loss ,acc, confusion_mat
-
-        evaluate_batch_size = self._model_parameters_obj._args['evaluate_batch_size']
-        evaluate_verbose = self._model_parameters_obj._args['evaluate_verbose']
-        model = self._model
-        data_obj = self._model_parameters_obj._args['data_obj']
-        idx = data_obj._train_x.shape[1]
-        train_result = model.evaluate(self._train_x, self._train_y_categorical,
-                                      batch_size=evaluate_batch_size, verbose=evaluate_verbose)
-        evaluate_result = model.evaluate(self._valid_x, self._valid_y_categorical,
-                                         batch_size=evaluate_batch_size, verbose=evaluate_verbose)
-
-        print('Train loss: %f, Train acc: %f, Valid loss: %f, Valid acc: %f') % (
-            train_result[0], train_result[1], evaluate_result[0], evaluate_result[1])
-
-        predict_train_y_categorical = model.predict(self._train_x)
-        predict_train_y_toInt = np.argmax(predict_train_y_categorical, axis=1)
-        y_true = np.array(data_obj._train_y)
-        y_predict = np.array(predict_train_y_toInt)
-        print('####### train confusion matrix ########')
-        train_confu_matrix_df = tool.show_confuse_matrix(y_true, y_predict)
-
-
-        predict_valid_y_categorical = model.predict(self._valid_x)
-        predict_valid_y_toInt = np.argmax(predict_valid_y_categorical, axis=1)
-        y_true = np.array(data_obj._valid_y)
-        y_predict = np.array(predict_valid_y_toInt)
-        print('####### valid confusion matrix ########')
-        valid_confu_matrix_df = tool.show_confuse_matrix(y_true, y_predict)
-        return train_confu_matrix_df, valid_confu_matrix_df
-
-    def __test(self):
-        data_obj = self._model_parameters_obj._args['data_obj']
-        data_obj._prepare_test_data()
-        self._test_x, self._test_y = data_obj._test_x, data_obj._test_y
-        #        self._model_parameters_obj._args['data_obj']._data_parameters_obj._args['dataType'] = 'train_valid'
-        data_obj._data_parameters_obj._args['dataType'] = 'train'
-        modelFile_fullName, modelFile_name = self.__get_modelFileName()
-        print 'save_name', modelFile_fullName
-        predict_test_y_categorical = self._model.predict(self._test_x)
-        predict_test_y_toInt = np.argmax(predict_test_y_categorical, axis=1)
-        y_true = np.array(data_obj._test_y)
-        y_predict = np.array(predict_test_y_toInt)
-
-        print('****test confusion matrix****')
-        test_confuse_df = tool.show_confuse_matrix(y_true, y_predict)
-
-        parameter_dict = data_obj._data_parameters_obj._args
-        underlyingTime_directory = tool.get_underlyingTime_directory(parameter_dict)
-        dataType = parameter_dict['dataType']
-
-        parameter_dict['dataType'] = 'test'
-        test_onlyFileName = tool.get_onlyFileName(parameter_dict)
-        abslute_test_filename = underlyingTime_directory + test_onlyFileName + '.csv'
-        test_confuse_df.to_csv(abslute_test_filename)
-
-        parameter_dict['dataType'] = dataType
-        ###  save figure results ###
-        startTime, endTime, train_lookBack, valid_lookBack = tool.get_start_end_lookback(parameter_dict)
-        true_tag_figure_path = underlyingTime_directory + '%s-%s-TrueLabels.png' % (startTime, endTime)
-        tool.save_fig(data_obj._test_filtered_close_for_use, data_obj._test_close_for_use, y_true, true_tag_figure_path)
-        predict_tag_figure_path = underlyingTime_directory + '%s-%s-PredictLabels.png' % (startTime, endTime)
-        tool.save_fig(data_obj._test_filtered_close_for_use, data_obj._test_close_for_use, y_predict,
-                      predict_tag_figure_path)
-        return test_confuse_df
 
     def __get_modelFileName(self):
 
@@ -483,36 +305,49 @@ class Your_Model(base.Model):
         data_obj = self._model_parameters_obj._args['data_obj']
         self._train_x, self._train_y = data_obj._train_x, data_obj._train_y
         self._valid_x, self._valid_y =data_obj._valid_x, data_obj._valid_y
-
-        #self._model = im
-        self.__train()
+        self._modelFile_fullName, modelFile_name = self.__get_modelFileName()
+        parameter_dict = self._model_parameters_obj._args
+        loss, acc, confusion_mat = im.train(self._train_x, self._train_y, self._valid_x, self._valid_y,
+                                            self._modelFile_fullName, parameter_dict)
+        #self.__train()
 
     def _evaluate(self):
-        train_confu_matrix_df, valid_confu_matrix_df = self.__evaluate()
-        return train_confu_matrix_df, valid_confu_matrix_df
+        #train_confuse_df, valid_confuse_df = self.__evaluate()
+        model_parameter_dict = self._model_parameters_obj._args
+        data_obj = model_parameter_dict['data_obj']
+        data_parameter_dict = data_obj._data_parameters_obj._args
+        predict_train_y_int, predict_valid_y_int = im.evaluate(self._train_x, self._train_y, self._valid_x, self._valid_y,
+                                           self._modelFile_fullName, model_parameter_dict)
+
+        y_true = np.array(self._train_y)
+        y_predict = np.array(predict_train_y_int)
+        data_parameter_dict['dataType'] = 'train'
+        train_confuse_df = tool.confuse_matrix(y_true, y_predict, data_parameter_dict)
+        y_true = np.array(self._valid_y)
+        y_predict = np.array(predict_valid_y_int)
+        data_parameter_dict['dataType'] = 'valid'
+        valid_confuse_df = tool.confuse_matrix(y_true, y_predict, data_parameter_dict)
+        return [train_confuse_df, valid_confuse_df]
 
     def _test(self):
-        test_confuse_matrix_df = self.__test()
-        return test_confuse_matrix_df
-
-    def _load_model_from_file(self):
-        # modelFile_fullName = self.__get_modelFileName()
-        # self._model = load_trained_model(modelFile_fullName)
-        pass
-
-    def _loadModel_evaluate(self):
-        # modelFileName = self.__get_modelFileName()
-        # if os.path.exists(modelFileName):
-        #     self._model =load_trained_model(modelFileName)
-        # self._evaluate()
-        pass
-
+        model_parameter_dict = self._model_parameters_obj._args
+        data_obj = self._model_parameters_obj._args['data_obj']
+        data_parameter_dict = data_obj._data_parameters_obj._args
+        data_obj._prepare_test_data()
+        self._test_x, self._test_y = data_obj._test_x, data_obj._test_y
+        im.test(self._test_x, self._test_y, self._modelFile_fullName, model_parameter_dict)
+        predict_test_y_int = im.predict(self._test_x, self._modelFile_fullName)
+        y_true = np.array(self._test_y)
+        y_predict = np.array(predict_test_y_int)
+        data_parameter_dict['dataType'] = 'test'
+        test_confuse_df = tool.confuse_matrix(y_true, y_predict, data_parameter_dict)
+        return [test_confuse_df, y_true, y_predict, data_obj._test_filtered_close_for_use, data_obj._test_close_for_use, data_obj._test_x_date]
 
 
     def _clean(self):
         data_obj = self._model_parameters_obj._args['data_obj']
         parameter_dict = data_obj._data_parameters_obj._args
-        #parameter_dict.pop('currenttime_str') ## internal variable, only used during iteration
+        #data_parameter_dict.pop('currenttime_str') ## internal variable, only used during iteration
         pass
 
 

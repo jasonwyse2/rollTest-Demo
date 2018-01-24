@@ -275,7 +275,7 @@ class Your_Model(base.Model):
         y_true =np.array(data_obj._valid_y)
         y_predict = np.array(predict_valid_y_toInt)
         print('valid confusion matrix')
-        confuse_df = tool.show_confuse_matrix(y_true, y_predict)
+        confuse_df = tool.confuse_matrix(y_true, y_predict)
         confu = confuse_df.as_matrix()
         pred_acc_per_class = np.diag(confu).astype(np.float) / np.sum(confu, axis=0)
         print 'predict_accuracy_per_class:'
@@ -292,7 +292,7 @@ class Your_Model(base.Model):
         y_true = np.array(data_obj._test_y)
         y_predict = np.array(predict_test_y_toInt)
         print('test confusion matrix')
-        confuse_df = tool.show_confuse_matrix(y_true, y_predict)
+        confuse_df = tool.confuse_matrix(y_true, y_predict)
         confu = confuse_df.as_matrix()
         pred_acc_per_class = np.diag(confu).astype(np.float) / np.sum(confu, axis=0)
         print 'predict_accuracy_per_class:'

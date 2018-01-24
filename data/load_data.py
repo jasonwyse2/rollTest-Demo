@@ -155,7 +155,6 @@ def tag_sharpGentle(data_afterNTimesFilter, tag_for_upDown, slope_threshold):#da
         for j in range(change_loc[i], change_loc[i + 1]):
             tag_k.append(a)
     tag_k.append(tag_k[-1])
-
     return tag_k
 
 def tag_data(close, window_size, window_beta, filterTimes_for_upDown, filterTimes_for_sharpGentle, slope_threshold):
@@ -203,32 +202,14 @@ def get_datasets_2(close,parameter_dict,show_label=True):
     labels = raw_y[NTradeDays_for_indicatorCalculation-1:]
     close_for_use = close[NTradeDays_for_indicatorCalculation:]
     filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:]
-    
-    # print 'x',np.where(np.isnan(x))
-    # print 'labels',set(labels)
-    # import matplotlib.pyplot as plt
-    # labels = labels.astype(int)
-    # filter_data_for_use = np.array(filter_data_for_use)
-    # if show_label:
-    #     fig = plt.figure()
-    #     plt.plot(range(close_for_use.shape[0]),filter_data_for_use)
-    #     plt.plot(range(close_for_use.shape[0]),close_for_use)
-    #     plt.scatter(np.where(labels == 0)[0],filter_data_for_use[np.where(labels==0)[0]],marker='o',c='r',label='0',s=30)
-    #     plt.scatter(np.where(labels == 1)[0], filter_data_for_use[np.where(labels == 1)[0]], marker='o',c='y',label='1',s=30)
-    #     plt.scatter(np.where(labels == 2)[0], filter_data_for_use[np.where(labels == 2)[0]], marker='o', c='b', label='2', s=30)
-    #     plt.scatter(np.where(labels == 3)[0], filter_data_for_use[np.where(labels == 3)[0]], marker='o', c='g', label='3', s=30)
-    #     plt.legend()
-    #     plt.show()
-    # else:
-    #     pass
-    # print 'figure plot!'
     return x,labels,close_for_use,filter_data_for_use
 
 
 def get_x_y(close, parameter_dict):
     """
-    it has already cut the top NTradeDays, which is used for calculating the indicators.
-    But the data it returns contain the extra days for tagging data.
+        the variables it returns has cut the extraTradeDays for indicator in the top positions and also cut the
+        extraTradeDays for tagging data in the last positions. The data it returns is exactly the same size as the
+        data between startTime and endTime
     """
     window_size = parameter_dict['filter_windowSize']
     window_beta = parameter_dict['kaiser_beta']
@@ -244,33 +225,43 @@ def get_x_y(close, parameter_dict):
                                              slope_threshold=slope_threshold)
     raw_y = np.array(raw_y)
     close = np.array(close.tolist())
-    pct = np.diff(close) / close[:-1]
+    return_rate = np.diff(close) / close[:-1]
     ### calculate indicators with log_return, other than 'close' price
-    raw_x = get_indicators(pct)
-
+    raw_x = get_indicators(return_rate)
+    # the number of max length of 'nan' in indicators
     nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
-    if NTradeDays_for_indicatorCalculation <= nan_num:
+    if NTradeDays_for_indicatorCalculation < nan_num:
         raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN,i.e.%s' % str(nan_num ))
-    # shift one day when calculate 'pct'
-    x = raw_x[NTradeDays_for_indicatorCalculation - 1:-(extraTradeDays)]
-    labels = raw_y[NTradeDays_for_indicatorCalculation :-(extraTradeDays-1)]
-    close_for_use = close[NTradeDays_for_indicatorCalculation:-(extraTradeDays)]
-    filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:-(extraTradeDays)]
+    # the return_rate of the first day in 'close' can not be calculated, so there is one day miss in the first position
+    #  in 'close_return_rate' when comparing with 'close'. When cut 'NTradeDays_for_indicatorCalculation' days in 'close',
+    #  we only need to cut 'NTradeDays_for_indicatorCalculation-1' days in 'raw_x'
+    # 'raw_label_y' is the label array for 'close'. Each day's label needs the next day's close price to tag it,
+    # so there is no label for the last day in 'close'. We need to cut one day in the last of 'close' for the alignment
+    # with 'labels'. So does 'filter_data_for_use' and 'raw_x_indicators'.
+    x = raw_x[NTradeDays_for_indicatorCalculation - 1:-1]
+    labels = raw_y[NTradeDays_for_indicatorCalculation :]
+    close_for_use = close[NTradeDays_for_indicatorCalculation:-1]
+    filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:-1]
 
+    # original 'close' has extraTradeDays after 'endTime'. We have cut one day because of 'labels', so we just need to
+    # cut 'extraTradeDays-1' days to make the data align with data between startTime and endTime.
+    extraTradeDays = extraTradeDays-1
+    x, labels = x[:-extraTradeDays], labels[:-extraTradeDays]
+    filter_data_for_use, close_for_use = filter_data_for_use[:-extraTradeDays], close_for_use[:-extraTradeDays]
     return x, labels, filter_data_for_use, close_for_use
 
 def get_balanced_datasets(x,y,parameter_dict):
-    nb_class = parameter_dict['nb_class']
-    print 'nb_class',nb_class
+    nb_class = parameter_dict['nb_classes']
+    print 'nb_classes',nb_class
     
-    idx_list = [np.where(y==i)[0] for i in range(nb_class)]
-    min_len = min([v.shape[0] for v in idx_list])
-    print 'min_len',min_len
+    indexArrayOfEachClass_list = [np.where(y==i)[0] for i in range(nb_class)]
+    min_len = min([v.shape[0] for v in indexArrayOfEachClass_list])
+    print 'the minimum data number in %s classes'%nb_class,min_len
 
-    select_id_list = [np.random.choice(range(len(idx_)),min_len).tolist() for idx_ in idx_list]
-    balanced_x_list = list(map(lambda idx_,select_id: x[idx_[select_id],:], idx_list,select_id_list))
-    balanced_y_list = list(map(lambda idx_,select_id:y[idx_[select_id]], idx_list,select_id_list))
+    selected_idx_list = [np.random.choice(range(len(indexArrayOfOneClass)),min_len).tolist() for indexArrayOfOneClass in indexArrayOfEachClass_list]
+    balanced_x_list = list(map(lambda idx_,select_id: x[idx_[select_id],:], indexArrayOfEachClass_list,selected_idx_list))
+    balanced_y_list = list(map(lambda idx_,select_id:y[idx_[select_id]], indexArrayOfEachClass_list,selected_idx_list))
     balanced_x = np.vstack(balanced_x_list)
     # print 'balanced x shape',balanced_x.shape
     train_x = balanced_x.reshape(-1,balanced_x.shape[1],1,1)
@@ -282,7 +273,6 @@ def get_balanced_datasets(x,y,parameter_dict):
 def get_balanced_shuffled_datasets(X,Y,parameter_dict):
     
     train_x,train_y = get_balanced_datasets(X,Y,parameter_dict)
-
     seed_train = 585
     np.random.seed(seed_train)
     randIdx_array = np.random.permutation(train_x.shape[0])

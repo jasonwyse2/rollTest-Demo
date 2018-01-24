@@ -9,39 +9,88 @@ from numpy import random
 from pandas import DataFrame
 import datetime
 import time
-def roll_test():
-    print('roll_test')
-
 
 from matplotlib import rcParams
 from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 
-myfont = FontProperties(fname='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', size=10)
+myfont = FontProperties(fname='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', size=20)
 rcParams['font.sans-serif'] = ['SimHei']
 rcParams['axes.unicode_minus'] = False  # 解决负号'-'显示为方块的问题
 
 
-def save_fig(filtered_close, close, y, fig_path):
-    # with PdfPages(fig_path) as pdf:
-    # pp = PdfPages(fig_path)
-    # with PdfPages(fig_path) as pdf:
-    # As many times as you like, create a figure fig and save it:
+def save_fig(filtered_close, close, date, y, fig_path, interval=5):
 
-    #fig = plt.figure()
-    # pdf.savefig(fig)
-    point_size = 20
+    filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
+    point_size = 30
+    with PdfPages(fig_path) as pdf:
+        plt.figure(figsize=(20, 10))
+        plt.plot(range(close.shape[0]), filtered_close)
+        plt.plot(range(close.shape[0]), close)
+        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'sharp up', s=point_size)
+        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'sharp down', s=point_size)
+        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'gentle up', s=point_size)
+        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'gentle down',
+                    s=point_size)
+        #plt.legend(prop=myfont)
+        plt.legend()
+        interval_idx_list = []
+        interval_date_list = []
+        for i in range(close.shape[0]):
+            if i % interval == 0:
+                interval_idx_list.append(i)
+                interval_date_list.append(date[i])
+        plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
+        plt.xticks(rotation=60, fontsize=13)
+        pdf.savefig()
+        plt.close()
+
+
+    # plt.figure(figsize=(20, 10))
+    # plt.plot(range(close.shape[0]), filtered_close)
+    # plt.plot(range(close.shape[0]), close)
+    # plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'急涨', s=point_size)
+    # plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'急跌', s=point_size)
+    # plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'缓涨', s=point_size)
+    # plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'缓跌', s=point_size)
+    # plt.legend(prop=myfont)
+    # #plt.xticks(range(close.shape[0]), date)
+    # interval_idx_list = []
+    # interval_date_list = []
+    # for i in range(close.shape[0]):
+    #     if i%interval==0:
+    #         interval_idx_list.append(i)
+    #         interval_date_list.append(date[i])
+    # plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
+    # plt.xticks(rotation=60, fontsize=13)
+    # plt.savefig(fig_path)
+    # plt.close()
+
+    # pp = PdfPages(fig_path)
+    # fig = plt.figure(figsize=(20, 10))
+    #
+    # pp.savefig()
+
+
+
+def save_fig_kneeUpDown(filtered_close, close, date, y, fig_path):
+
+    filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
+    point_size = 30
+    plt.figure(figsize=(20, 10))
+    plt.xticks(range(close.shape[0]), date)
+    plt.xticks(rotation=60, fontsize =13)
     plt.plot(range(close.shape[0]), filtered_close)
     plt.plot(range(close.shape[0]), close)
-    plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'急涨', s=point_size)
-    plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'急跌', s=point_size)
-    plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'缓涨', s=point_size)
-    plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'缓跌', s=point_size)
+    plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'谷底', s=point_size)
+    plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'上涨', s=point_size)
+    plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'顶点', s=point_size)
+    plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'下跌', s=point_size)
     plt.legend(prop=myfont)
     plt.savefig(fig_path)
     plt.close()
-
 def show_fig(labels,filter_data_for_use,close_for_use):
 
     import matplotlib.pyplot as plt
@@ -57,34 +106,38 @@ def show_fig(labels,filter_data_for_use,close_for_use):
     plt.legend(prop=myfont)
     plt.show()
 
-def show_confuse_matrix(y_true,y_predict):
+def confuse_matrix(y_true, y_predict, parameter_dict):
     # confusion_matrix(y_true, y_pred), be aware y_true and y_pred should have the same type
-    confusion_result = confusion_matrix(np.array(y_true), np.array(y_predict),labels=range(4))
-    confu_matrix = pd.DataFrame(confusion_result)
+    nb_classes = parameter_dict['nb_classes']
+    confusion_result = confusion_matrix(np.array(y_true), np.array(y_predict),labels=range(nb_classes))
+    confuse_matrix = pd.DataFrame(confusion_result)
     # column is predict
-    print('        *** Confusion Matrix ***')
-    print('====================================================')
+    # print('        *** Confusion Matrix ***')
+    # print('====================================================')
     column_list = []
-    for i in range(confu_matrix.shape[1]):
+    for i in range(confuse_matrix.shape[1]):
         column_list.append('pred ' + str(i))
-    confu_matrix.columns = column_list
+    confuse_matrix.columns = column_list
     index_list = []
-    for i in range(confu_matrix.shape[0]):
+    for i in range(confuse_matrix.shape[0]):
         index_list.append('real ' + str(i))
-    confu_matrix.index = index_list
+    confuse_matrix.index = index_list
 
-    print confu_matrix
-    confu = confu_matrix.as_matrix()
-    pred_acc_per_class = np.diag(confu).astype(np.float) / np.sum(confu, axis=0)
+    #print confuse_matrix
+    confuse = confuse_matrix.as_matrix()
+    pred_acc_per_class = np.diag(confuse).astype(np.float) / np.sum(confuse, axis=0)
     #### remove 'nan' value in 'pred_acc_per_class'
     pred_acc_per_class[np.where(np.isnan(pred_acc_per_class))]=0
-    print('predict_accuracy_per_class:', pred_acc_per_class)
-    confu_matrix.loc['accuracy_per_class'] = pred_acc_per_class
+    # print('predict_accuracy_per_class:', pred_acc_per_class)
 
-    print('Average accuracy:', np.mean(pred_acc_per_class))
-    average_accuracy_allClass = np.mean(pred_acc_per_class[np.where(pred_acc_per_class>0)])
-    confu_matrix.loc['Average accuracy'] = average_accuracy_allClass
-    return confu_matrix
+    startTime, endTime, train_lookBack, valid_lookBack = get_start_end_lookback(parameter_dict)
+    confuse_matrix.loc['accuracy(%s-%s)'%(startTime,endTime)] = pred_acc_per_class
+
+    # print('Average accuracy:', np.mean(pred_acc_per_class))
+    #average_accuracy_allClass = np.mean(pred_acc_per_class[np.where(pred_acc_per_class>0)])
+    average_accuracy_allClass = np.sum(np.diag(confuse).astype(np.float))/np.sum(confuse)
+    confuse_matrix.loc['average'] = [average_accuracy_allClass,np.nan,np.nan,np.nan]
+    return confuse_matrix
 
 def make_directory(dir):
     '''
@@ -190,7 +243,12 @@ def get_start_end_lookback(parameter_dict):
         else:
             train_lookBack = parameter_dict['train_lookBack_from_endTime']
             valid_lookBack = parameter_dict['valid_lookBack_from_endTime']
-
+    elif parameter_dict['dataType'] == 'rollTestAll':
+        startTime = parameter_dict['test_mostStartTime']
+        endTime = parameter_dict['test_mostEndTime']
+    else:
+        startTime = ''
+        endTime = ''
     return startTime,endTime,train_lookBack, valid_lookBack
 
 
@@ -206,7 +264,7 @@ def get_dataframe_between_start_end(startTime, endTime, parameter_dict):
 
 def save_allConfuseMatrix(allConfuseMatrix, parameter_dict, type = 'train'):
     underlyingTime_directory = get_underlyingTime_directory(parameter_dict)
-    allConfuseMatrix_fileName = underlyingTime_directory + 'rollTest_allConfuseMatrix-'+type+'.csv'
+    allConfuseMatrix_fileName = underlyingTime_directory + 'rollTest_ConfuseMatrix-'+type+'.csv'
     allConfuseMatrix.to_csv(allConfuseMatrix_fileName, encoding='utf-8')
 
 
