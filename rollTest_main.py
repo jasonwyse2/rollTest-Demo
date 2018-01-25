@@ -7,10 +7,12 @@ import tool as tool
 import your_class  as your
 import os
 import sys
+import time
 from base_class import Parameters
 from custom_class import Your_Model, Your_Data
 
 if __name__ == '__main__':
+    start = time.clock()
     # parameter settings
     # all parameters must be passing by as a dictionary. like: p = Parameters(a = 1, b = 'parameters')
     ############################ prepare data for model to train ##################################
@@ -32,8 +34,8 @@ if __name__ == '__main__':
         addNoise_windowSize=5,
         extraTradeDays_afterEndTime_for_filter = 2,
         extraTradeDays_beforeStartTime_for_filter=2,
-        train_startTime='20060101', train_endTime='20150101', train_lookBack_from_endTime=0,
-        valid_startTime='20150101', valid_endTime='20160101', valid_lookBack_from_endTime=0,
+        train_startTime='20060101', train_endTime='20160101', train_lookBack_from_endTime=0,
+        valid_startTime='20160101', valid_endTime='20170101', valid_lookBack_from_endTime=0,
         test_startTime='20160101', test_endTime='20160201', test_lookBack_from_endTime=0,
         test_mostStartTime='20160101', test_mostEndTime='20160201',
         nb_classes = 4,
@@ -52,7 +54,7 @@ if __name__ == '__main__':
     )
 
     model_parameters_obj = Parameters(
-        train_num=2, batch_size=512 * 2, nb_classes=4, nb_input=10, evaluate_batch_size=128, evaluate_verbose=0,
+        train_num=20, batch_size=512 * 2, nb_classes=4, nb_input=10, evaluate_batch_size=128, evaluate_verbose=0,
         filter_row =2 , filter_col =1, filter_num = 16,
         loss='categorical_crossentropy', optimizer='rmsprop', loss_weights='loss_weights', metrics=['accuracy'],
         modelFile_directoryName = 'models/',## this is a relative directory, the abslute directory is project_directory+code_wind+modelFile_DirectoryName
@@ -90,6 +92,7 @@ if __name__ == '__main__':
         data_obj = Your_Data(data_parameters_obj)
         data_obj._run()
         model_parameters_obj._args['data_obj'] = data_obj
+        #model_parameters_obj._data_obj = data_obj
         model_obj = Your_Model(model_parameters_obj)
 
         evaluate_returns, test_returns= model_obj._run()
@@ -124,6 +127,9 @@ if __name__ == '__main__':
     test_mostStartTime = data_parameters_obj._args['test_mostStartTime']
     test_mostEndTime = data_parameters_obj._args['test_mostEndTime']
     true_tag_figure_path = underlyingTime_directory + '%s-%s-TrueLabels.pdf' % (test_mostStartTime, test_mostEndTime)
-    tool.save_fig(test_filtered_close_all, test_close_all, test_date_all, test_y_true_all, true_tag_figure_path)
+    tool.save_figure_pdf(test_filtered_close_all, test_close_all, test_date_all, test_y_true_all, true_tag_figure_path)
     predict_tag_figure_path = underlyingTime_directory + '%s-%s-PredictLabels.pdf' % (test_mostStartTime, test_mostEndTime)
-    tool.save_fig(test_filtered_close_all, test_close_all, test_date_all, test_y_predict_all, predict_tag_figure_path)
+    tool.save_figure_pdf(test_filtered_close_all, test_close_all, test_date_all, test_y_predict_all, predict_tag_figure_path)
+
+    elapsed = (time.clock() - start)
+    print("Time used(minute): ", float(elapsed)/60)

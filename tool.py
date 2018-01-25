@@ -21,18 +21,19 @@ rcParams['font.sans-serif'] = ['SimHei']
 rcParams['axes.unicode_minus'] = False  # 解决负号'-'显示为方块的问题
 
 
-def save_fig(filtered_close, close, date, y, fig_path, interval=5):
+def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up','sharp down','gentle up','gentle down'],interval=5):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 30
+    #label1 = ['sharp up','sharp down','gentle up','gentle down']
     with PdfPages(fig_path) as pdf:
         plt.figure(figsize=(20, 10))
         plt.plot(range(close.shape[0]), filtered_close)
         plt.plot(range(close.shape[0]), close)
-        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'sharp up', s=point_size)
-        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'sharp down', s=point_size)
-        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'gentle up', s=point_size)
-        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'gentle down',
+        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=label[0], s=point_size)
+        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=label[1], s=point_size)
+        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=label[2], s=point_size)
+        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=label[3],
                     s=point_size)
         #plt.legend(prop=myfont)
         plt.legend()
@@ -43,7 +44,7 @@ def save_fig(filtered_close, close, date, y, fig_path, interval=5):
                 interval_idx_list.append(i)
                 interval_date_list.append(date[i])
         plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
-        plt.xticks(rotation=60, fontsize=13)
+        plt.xticks(rotation=80, fontsize=13)
         pdf.savefig()
         plt.close()
 
@@ -75,7 +76,7 @@ def save_fig(filtered_close, close, date, y, fig_path, interval=5):
 
 
 
-def save_fig_kneeUpDown(filtered_close, close, date, y, fig_path):
+def save_figure_pdf_kneeUpDown(filtered_close, close, date, y, fig_path):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 30
