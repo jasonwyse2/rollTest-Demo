@@ -12,6 +12,7 @@ from keras.optimizers import Adadelta,Adam,RMSprop
 from keras.callbacks import EarlyStopping,ModelCheckpoint,TensorBoard
 from keras.models import Sequential,load_model,Model
 import tool as tool
+import time
 
 import keras
 
@@ -72,3 +73,10 @@ def show_confusion(y_true,y_pred,nb_classes):
     #confu_df = im.show_confusion(y_true,y_pred,nb_classes)
     #return confu_df
     pass
+
+if __name__ == '__main__':
+    time1 = time.time()
+    for i in range(1):
+        time.sleep(2)
+    time2 = time.time()
+    print('elapse time:',time2-time1)

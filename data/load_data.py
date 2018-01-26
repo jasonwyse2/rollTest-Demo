@@ -6,7 +6,7 @@ import talib
 import datetime
 # from scipy.stats import norm
 import scipy.signal as signal
-
+import datalib.util.get_3d_data_set as get3d
 from keras.utils.np_utils import to_categorical
 # import util.filtered as close_filter
 import matplotlib
@@ -59,14 +59,16 @@ def get_legal_input(indicators,statistics_len):
     return legal_input,cut_number
     
 #参数close：收盘价，windom_size：滤波窗长度，window_beta:滤波器参数， n:滤波次数
+def data_oneTime_filter(close, window_size, window_beta):
 
-def data_filter_nTimes(close, window_size, window_beta, filterTimes):
-    def data_oneTime_filter(close, window_size, window_beta):
-
-        window_array = signal.kaiser(window_size, beta=window_beta)
-        close_filtered = signal.convolve(close, window_array, mode='same') / sum(window_array)
+    window_array = signal.kaiser(window_size, beta=window_beta)
+    close_filtered = signal.convolve(close, window_array, mode='same') / sum(window_array)
+    if window_size % 2 == 0:
+        cutExtraDays_for_FilteredClose = list(close_filtered)[int(window_size / 2):-int(window_size/2-1)]  #
+    else:
         cutExtraDays_for_FilteredClose = list(close_filtered)[int(window_size / 2):-int(window_size / 2)]  #
-        return cutExtraDays_for_FilteredClose
+    return cutExtraDays_for_FilteredClose
+def data_filter_nTimes(close, window_size, window_beta, filterTimes):
 
     #data_afterNTimesFilter_list = [close.values]
     tmp_close = close
@@ -182,6 +184,7 @@ def get_datasets_2(close,parameter_dict,show_label=True):
     filterTimes_for_upDown = parameter_dict['filterTimes_for_upDown']
     filterTimes_for_sharpGentle = parameter_dict['filterTimes_for_sharpGentle']
     slope_threshold = parameter_dict['slope_threshold']
+    extraTradeDays = parameter_dict['extraTradeDays_afterEndTime_for_filter']
     raw_y ,data_afterNTimesFilter = tag_data(close, window_size=window_size, window_beta=window_beta,
                                filterTimes_for_upDown =filterTimes_for_upDown,
                             filterTimes_for_sharpGentle =filterTimes_for_sharpGentle, slope_threshold=slope_threshold)
@@ -197,11 +200,14 @@ def get_datasets_2(close,parameter_dict,show_label=True):
     if NTradeDays_for_indicatorCalculation<nan_num+1:
         raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN+1,i.e.%s'%str(nan_num+1))
 
-    x = raw_x[NTradeDays_for_indicatorCalculation-1:]
+    x = raw_x[NTradeDays_for_indicatorCalculation-1:-1]
+    labels = raw_y[NTradeDays_for_indicatorCalculation:]
+    close_for_use = close[NTradeDays_for_indicatorCalculation:-1]
+    filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:-1]
 
-    labels = raw_y[NTradeDays_for_indicatorCalculation-1:]
-    close_for_use = close[NTradeDays_for_indicatorCalculation:]
-    filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:]
+    extraTradeDays = extraTradeDays - 1
+    x, labels = x[:-extraTradeDays], labels[:-extraTradeDays]
+    filter_data_for_use, close_for_use = filter_data_for_use[:-extraTradeDays], close_for_use[:-extraTradeDays]
     return x,labels,close_for_use,filter_data_for_use
 
 
@@ -250,6 +256,96 @@ def get_x_y(close, parameter_dict):
     x, labels = x[:-extraTradeDays], labels[:-extraTradeDays]
     filter_data_for_use, close_for_use = filter_data_for_use[:-extraTradeDays], close_for_use[:-extraTradeDays]
     return x, labels, filter_data_for_use, close_for_use
+
+def get_tag(close,parameter_dict):
+    window_size = parameter_dict['filter_windowSize']
+    window_beta = parameter_dict['kaiser_beta']
+    filtered_data = data_filter(close, window_size, window_beta)
+    tag= get_old_labels(filtered_data)
+
+def data_filter(close, window_size, window_beta):
+    window = signal.kaiser(window_size, beta=window_beta)
+    close_filtered = signal.convolve(close, window, mode='same') / sum(window)
+    if window_size%2==0:
+        close_filtered_modify = list(close_filtered)[int(window_size/2):-int(window_size/2-1)]#
+    else:
+        close_filtered_modify = list(close_filtered)[int(window_size / 2):-int(window_size / 2 )]  #
+
+    return close_filtered_modify
+def get_old_labels(filtered_data):
+    knee_idx = [0]
+    filtered_data = np.array(filtered_data)
+    data_len = filtered_data.shape[0]
+    for i in range(1,data_len):
+        if i == data_len-1:
+            knee_idx.append(i)
+        else:
+            if (filtered_data[i+1]-filtered_data[i])*(filtered_data[i]-filtered_data[i-1])<0:
+                knee_idx.append(i)
+            else:
+                pass
+
+    knee_close = filtered_data[knee_idx]
+
+    break_t, break_p = get3d.break_point(0.01, knee_idx, knee_close)
+    if not break_t[-1] == knee_idx[-1]:
+        break_t.append(knee_idx[-1])
+        break_p.append(knee_close[-1])
+
+    break_idx = np.array(break_t)
+
+    labels = np.zeros(data_len)
+    if filtered_data[break_idx[1]] - filtered_data[break_idx[0]] > 0:
+        for i in range(len(break_idx)-1):
+
+                if i%2==0:
+                    labels[break_idx[i]:break_idx[i]+3] = 0
+                    labels[break_idx[i]+3:break_idx[i+1]-3]=1
+                    labels[break_idx[i+1]-3:break_idx[i+1]]=2
+                else:
+                    labels[break_idx[i]:break_idx[i] + 3] = 2
+                    labels[break_idx[i] + 3:break_idx[i + 1] - 3] = 3
+                    labels[break_idx[i+1]-3:break_idx[i+1]]=0
+    else:
+        for i in range(len(break_idx) - 1):
+            if i % 2 == 0:
+                labels[break_idx[i]:break_idx[i] + 3] = 2
+                labels[break_idx[i] + 3:break_idx[i + 1] - 3] = 3
+                labels[break_idx[i+1]-3:break_idx[i+1]]=0
+            else:
+                labels[break_idx[i]:break_idx[i] + 3] = 0
+                labels[break_idx[i] + 3:break_idx[i + 1] - 3] = 1
+                labels[break_idx[i+1]-3:break_idx[i+1]]=2
+
+    return labels
+
+def get_x_y(close, parameter_dict):
+    """ """
+
+    raw_y, init_datf = get_tag(close,parameter_dict)
+
+    raw_y = np.array(raw_y)
+    close = np.array(close.tolist())
+    pct = np.diff(close) / close[:-1]
+
+    raw_x = get_indicators(pct)
+    # print 'filtered_close',len(filtered_close),filtered_close[:10]
+
+    nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
+    NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
+    extraTradeDays_afterEndTime_for_filter = parameter_dict['extraTradeDays_afterEndTime_for_filter']
+    extraTradeDays_beforeStartTime_for_filter = parameter_dict['extraTradeDays_beforeStartTime_for_filter']
+    if NTradeDays_for_indicatorCalculation < nan_num + 1:
+        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN+1,i.e.%s' % str(nan_num + 1))
+
+    x = raw_x[NTradeDays_for_indicatorCalculation - 1:-extraTradeDays_afterEndTime_for_filter]
+
+    labels = raw_y[NTradeDays_for_indicatorCalculation-extraTradeDays_beforeStartTime_for_filter:]
+    close_for_use = close[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime_for_filter]
+    filter_data_for_use = init_datf[NTradeDays_for_indicatorCalculation-extraTradeDays_beforeStartTime_for_filter:]
+
+
+    return x, labels.astype(np.int), close_for_use, filter_data_for_use
 
 def get_balanced_datasets(x,y,parameter_dict):
     nb_class = parameter_dict['nb_classes']

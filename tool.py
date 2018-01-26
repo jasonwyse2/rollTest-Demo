@@ -20,23 +20,63 @@ myfont = FontProperties(fname='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', si
 rcParams['font.sans-serif'] = ['SimHei']
 rcParams['axes.unicode_minus'] = False  # 解决负号'-'显示为方块的问题
 
+def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig_path,
+                                label = ['sharp up','sharp down','gentle up','gentle down'],
+                                color = ['red','green','violet','lightgreen'],
+                                interval=5):
 
-def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up','sharp down','gentle up','gentle down'],interval=5):
+    filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
+    point_size = 80
+    # y_true = y_list[0]
+    # y_predict = y_list[1]
+    title_list = ['True labels', 'Predict labels']
+    with PdfPages(fig_path) as pdf:
+        plt.figure(figsize=(30, 25))#
+        figure_position = [211,212]
+        for i in range(len(y_list)):
+
+            ax = plt.subplot(figure_position[i])
+            plt.sca(ax)
+            y = y_list[i]
+            plt.title(title_list[i],fontsize=20)
+            plt.plot(range(close.shape[0]), filtered_close)
+            plt.plot(range(close.shape[0]), close)
+            plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c=color[0], label=label[0], s=point_size)
+            plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c=color[1], label=label[1], s=point_size)
+            plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c=color[2], label=label[2], s=point_size)
+            plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c=color[3], label=label[3], s=point_size)
+
+            plt.legend(fontsize=20)
+            interval_idx_list = []
+            interval_date_list = []
+            for i in range(close.shape[0]):
+                if i % interval == 0:
+                    interval_idx_list.append(i)
+                    interval_date_list.append(date[i])
+            plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
+            plt.xticks(rotation=80, fontsize=15)
+            #plt.xlabel('time',fontsize=20)
+
+        pdf.savefig()
+        plt.close()
+
+def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up','sharp down','gentle up','gentle down'],
+                    color=['red', 'green', 'violet', 'lightgreen'], interval=5):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 30
     #label1 = ['sharp up','sharp down','gentle up','gentle down']
     with PdfPages(fig_path) as pdf:
-        plt.figure(figsize=(20, 10))
+        plt.figure(figsize=(30, 15))
         plt.plot(range(close.shape[0]), filtered_close)
         plt.plot(range(close.shape[0]), close)
-        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=label[0], s=point_size)
-        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=label[1], s=point_size)
-        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=label[2], s=point_size)
-        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=label[3],
+        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c=color[0], label=label[0], s=point_size)
+        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c=color[1], label=label[1], s=point_size)
+        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c=color[2], label=label[2], s=point_size)
+        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c=color[3], label=label[3],
                     s=point_size)
         #plt.legend(prop=myfont)
-        plt.legend()
+        plt.legend(fontsize=20)
         interval_idx_list = []
         interval_date_list = []
         for i in range(close.shape[0]):
@@ -45,34 +85,9 @@ def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up
                 interval_date_list.append(date[i])
         plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
         plt.xticks(rotation=80, fontsize=13)
+        plt.xlabel('time',fontsize=20)
         pdf.savefig()
         plt.close()
-
-
-    # plt.figure(figsize=(20, 10))
-    # plt.plot(range(close.shape[0]), filtered_close)
-    # plt.plot(range(close.shape[0]), close)
-    # plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'急涨', s=point_size)
-    # plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'急跌', s=point_size)
-    # plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'缓涨', s=point_size)
-    # plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'缓跌', s=point_size)
-    # plt.legend(prop=myfont)
-    # #plt.xticks(range(close.shape[0]), date)
-    # interval_idx_list = []
-    # interval_date_list = []
-    # for i in range(close.shape[0]):
-    #     if i%interval==0:
-    #         interval_idx_list.append(i)
-    #         interval_date_list.append(date[i])
-    # plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
-    # plt.xticks(rotation=60, fontsize=13)
-    # plt.savefig(fig_path)
-    # plt.close()
-
-    # pp = PdfPages(fig_path)
-    # fig = plt.figure(figsize=(20, 10))
-    #
-    # pp.savefig()
 
 
 
@@ -176,10 +191,12 @@ def get_onlyFileName(parameter_dict):
 def get_underlyingTime_directory(parameter_dict):
     project_directory = parameter_dict['project_directory']
     code_wind = parameter_dict['code_wind']
+    task_description = parameter_dict['task_description']
     if not parameter_dict.has_key('currenttime_str'):
         currenttime_str = currentTime_toString()
         parameter_dict['currenttime_str'] = currenttime_str
-    underlyingTime_directory = project_directory+ code_wind + '_' + parameter_dict['currenttime_str'] + '/'
+    underlyingTime_directory = project_directory+ code_wind + '_' + parameter_dict['currenttime_str'] + '_'+task_description+'/'
+
     return underlyingTime_directory
 
 def login_MySQL(db_parameter={}):
@@ -310,16 +327,12 @@ def get_daily_data(parameter_dict):
     if dataType=='train_valid':
         parameter_dict['valid_lookBack_from_endTime'] = valid_lookBack
         parameter_dict['train_lookBack_from_endTime'] = train_lookBack
-        #lookBack_from_endTime = train_lookBack + valid_lookBack
     elif dataType=='valid': #### dataType=='test'
         parameter_dict['valid_lookBack_from_endTime'] = valid_lookBack
-        #lookBack_from_endTime = valid_lookBack
     elif dataType=='test':
         parameter_dict['test_lookBack_from_endTime'] = valid_lookBack
-        #lookBack_from_endTime = valid_lookBack
     elif dataType=='train':
         parameter_dict['train_lookBack_from_endTime'] = train_lookBack
-        #lookBack_from_endTime = train_lookBack
     else:
         raise Exception('illegal dataType:%s, not support now'%dataType)
 
@@ -418,3 +431,16 @@ if __name__ == '__main__':
     # print result
     #print currentTime_toString()
     pass
+    #plt.figure(1)
+    plt.figure(2)
+    ax1 = plt.subplot(211)
+    ax2 = plt.subplot(212)
+    x = np.linspace(0,3,100)
+    for i in xrange(2):
+        #plt.figure(1)
+        #plt.plot(x,np.exp(i*x/3))
+        plt.sca(ax1)
+        plt.plot(x,np.sin(i*x))
+        plt.sca(ax2)
+        plt.plot(x,np.cos(i*x))
+    plt.show()
