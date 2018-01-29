@@ -31,10 +31,9 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
     # y_predict = y_list[1]
     title_list = ['True labels', 'Predict labels']
     with PdfPages(fig_path) as pdf:
-        plt.figure(figsize=(30, 25))#
+        plt.figure(figsize=(40, 25))#
         figure_position = [211,212]
         for i in range(len(y_list)):
-
             ax = plt.subplot(figure_position[i])
             plt.sca(ax)
             y = y_list[i]
@@ -55,6 +54,7 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
                     interval_date_list.append(date[i])
             plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
             plt.xticks(rotation=80, fontsize=15)
+            #plt.grid
             #plt.xlabel('time',fontsize=20)
 
         pdf.savefig()
@@ -107,7 +107,7 @@ def save_figure_pdf_kneeUpDown(filtered_close, close, date, y, fig_path):
     plt.legend(prop=myfont)
     plt.savefig(fig_path)
     plt.close()
-def show_fig(labels,filter_data_for_use,close_for_use):
+def show_fig(labels,filter_data_for_use,close_for_use,label = ['sharp up','sharp down','gentle up','gentle down']):
 
     import matplotlib.pyplot as plt
     labels = labels.astype(int)
@@ -115,10 +115,10 @@ def show_fig(labels,filter_data_for_use,close_for_use):
     point_size = 20
     plt.plot(range(filter_data_for_use.shape[0]),filter_data_for_use)
     plt.plot(range(filter_data_for_use.shape[0]),close_for_use)
-    plt.scatter(np.where(labels == 0)[0],close_for_use[np.where(labels==0)[0]],marker='o',c='red',label=u'急涨',s=point_size)
-    plt.scatter(np.where(labels == 1)[0], close_for_use[np.where(labels == 1)[0]], marker='o',c='green',label=u'急跌',s=point_size)
-    plt.scatter(np.where(labels == 2)[0], close_for_use[np.where(labels == 2)[0]], marker='o', c='violet', label=u'缓涨', s=point_size)
-    plt.scatter(np.where(labels == 3)[0], close_for_use[np.where(labels == 3)[0]], marker='o', c='lightgreen', label=u'缓跌', s=point_size)
+    plt.scatter(np.where(labels == 0)[0],close_for_use[np.where(labels==0)[0]],marker='o',c='red',label=label[0],s=point_size)
+    plt.scatter(np.where(labels == 1)[0], close_for_use[np.where(labels == 1)[0]], marker='o',c='green',label=label[1],s=point_size)
+    plt.scatter(np.where(labels == 2)[0], close_for_use[np.where(labels == 2)[0]], marker='o', c='violet', label=label[2], s=point_size)
+    plt.scatter(np.where(labels == 3)[0], close_for_use[np.where(labels == 3)[0]], marker='o', c='lightgreen', label=label[3], s=point_size)
     plt.legend(prop=myfont)
     plt.show()
 
@@ -337,9 +337,10 @@ def get_daily_data(parameter_dict):
         raise Exception('illegal dataType:%s, not support now'%dataType)
 
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
-    extraTradeDays_beforeStartTime_for_filter = parameter_dict['extraTradeDays_beforeStartTime_for_filter']
-    extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime_for_filter']
-
+    # extraTradeDays_beforeStartTime_for_filter = parameter_dict['extraTradeDays_beforeStartTime_for_filter']
+    filter_windowSize= parameter_dict['filter_windowSize']
+    extraTradeDays_afterEndTime = int(filter_windowSize)/2  if filter_windowSize%2==1 else (int(filter_windowSize)/2-1)
+    parameter_dict['extraTradeDays_afterEndTime'] = extraTradeDays_afterEndTime
     #NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation + extraTradeDays_beforeStartTime_for_filter
     NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation
     df_front_extraTradeDays = get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_startTime, parameter_dict)

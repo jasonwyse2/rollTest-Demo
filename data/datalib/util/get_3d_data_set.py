@@ -263,55 +263,56 @@ def get_stdr(knee_close):
     return stdr
 
 
-def break_point(stdr, knee_t, knee_close):
-    break_p = [knee_close[0]]
-    break_t = [knee_t[0]]
+def break_point(change_percent, knee_idx_list, knee_close_list):
+    break_close = [knee_close_list[0]]
+    break_close_index = [knee_idx_list[0]]
     i = 1
     tmp = -1
-    while i < len(knee_close[:-1]):
+    trend_type = {'up_trend':1,'down_trend':-1}
+    while i < len(knee_close_list[:-1]):
         # print i
 
         if i - tmp == 0:
             break
         tmp = i
-        if knee_close[i] - break_p[-1] > 0:
-            flag = 1
-            tmp_high = knee_close[i]
-            tmp_high_t = knee_t[i]
+        if knee_close_list[i] - break_close[-1] > 0:
+            flag = trend_type['up_trend']
+            tmp_high = knee_close_list[i]
+            tmp_high_index = knee_idx_list[i]
         else:
-            flag = -1
-            tmp_low = knee_close[i]
-            tmp_low_t = knee_t[i]
+            flag = trend_type['down_trend']
+            tmp_low = knee_close_list[i]
+            tmp_low_index = knee_idx_list[i]
 
-        if flag == 1:
-            for j, v in enumerate(knee_close[i + 1:]):
-                if (v - tmp_high) / v < -stdr:
-                    break_p.append(tmp_high)
-                    break_t.append(tmp_high_t)
+        if flag == trend_type['up_trend']:
+            for j, v in enumerate(knee_close_list[i + 1:]):
+                if (v - tmp_high) / tmp_high < -change_percent:
+                    break_close.append(tmp_high)
+                    break_close_index.append(tmp_high_index)
                     i += j + 1
                     break
                 else:
                     if v > tmp_high:
                         tmp_high = v
-                        tmp_high_t = knee_t[i + j + 1]
+                        tmp_high_index = knee_idx_list[i + j + 1]
 
                     else:
                         continue
-        else:
-            for j, v in enumerate(knee_close[i + 1:]):
-                if (v - tmp_low) / v > stdr:
-                    break_p.append(tmp_low)
-                    break_t.append(tmp_low_t)
+        else:#flag == trend_type['down_trend']
+            for j, v in enumerate(knee_close_list[i + 1:]):
+                if (v - tmp_low) / tmp_low > change_percent:
+                    break_close.append(tmp_low)
+                    break_close_index.append(tmp_low_index)
                     i += j + 1
                     break
                 else:
                     if v < tmp_low:
                         tmp_low = v
-                        tmp_low_t = knee_t[i + j + 1]
+                        tmp_low_index = knee_idx_list[i + j + 1]
 
                     else:
                         continue
-    return break_t, break_p
+    return break_close_index, break_close
 
 
 def get_label_list(b_t, b_close, filtered_close):
