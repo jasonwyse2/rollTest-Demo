@@ -12,33 +12,50 @@ from keras.utils.np_utils import to_categorical
 import matplotlib
 import os
 
-from data.ProbabilityIndicator import get_probability_indicator
+from data.ProbabilityIndicator import get_probability_indicator, rollstd
 
 slope_type = {'sharp':5,'gentle':4}
 trend_type = {'up': 1, 'down': 0}
-def get_indicators(close_price):
+def get_indicators_close(close_price):
     """ """
     upper, middle, lower = talib.BBANDS(close_price,
-                                        timeperiod=26,
+                                        timeperiod=13,
                                         # number of non-biased standard deviations from the mean
                                         nbdevup=2,
                                         nbdevdn=2,
                                         # Moving average type: simple moving average here
                                         matype=0)
-                                        
+
     WMA = talib.MA(close_price, 30, matype=2)
     TEMA = talib.MA(close_price, 30, matype=4)
+
     rsi = talib.RSI(close_price, timeperiod=6)
+
     macd, macdsignal, macdhist = talib.MACD(close_price, fastperiod=12, slowperiod=26, signalperiod=9)
     elas, p = get_probability_indicator(close_price, lmd_1=0.475, lmd_2=0.4)
 
+    # close_price = np.diff(close_price) / close_price[:-1]
+    # upper = np.diff(upper) / upper[:-1]
+    # middle = np.diff(middle) / middle[:-1]
+    # WMA = np.diff(WMA) / WMA[:-1]
+    # TEMA = np.diff(TEMA) / TEMA[:-1]
+    # rsi = np.diff(rsi) / rsi[:-1]
+    # macd = np.diff(macd) / macd[:-1]
+    # macdsignal = np.diff(macdsignal) / macdsignal[:-1]
+    # macdhist = np.diff(macdhist) / macdhist[:-1]
+    # p = np.diff(p) / p[:-1]
+    # elas = np.diff(elas) / elas[:-1]
+
     mat = close_price
-    mat = np.column_stack((mat,upper))
-    mat = np.column_stack((mat,middle))
-    mat = np.column_stack((mat,lower))
+    # mat = np.column_stack((mat,upper))
+    # #mat = upper
+    # mat = np.column_stack((mat,middle))
+    # mat = np.column_stack((mat,lower))
+
     mat = np.column_stack((mat,WMA))
     mat = np.column_stack((mat,TEMA))
     mat = np.column_stack((mat,rsi))
+    #mat = macd
     mat = np.column_stack((mat,macd))
     mat = np.column_stack((mat,macdsignal))
     mat = np.column_stack((mat,macdhist))
@@ -46,7 +63,72 @@ def get_indicators(close_price):
     mat = np.column_stack((mat, elas))
     
     return mat
-    
+
+
+def get_indicators_return(close_return):
+    """ """
+    upper, middle, lower = talib.BBANDS(close_return,
+                                        timeperiod=26,
+                                        # number of non-biased standard deviations from the mean
+                                        nbdevup=2,
+                                        nbdevdn=2,
+                                        # Moving average type: simple moving average here
+                                        matype=0)
+    upper1, middle1, lower1 = talib.BBANDS(close_return,
+                                           timeperiod=13,
+                                           # number of non-biased standard deviations from the mean
+                                           nbdevup=3,
+                                           nbdevdn=3,
+                                           # Moving average type: simple moving average here
+                                           matype=0)
+    upper2, middle2, lower2 = talib.BBANDS(close_return,
+                                           timeperiod=5,
+                                           # number of non-biased standard deviations from the mean
+                                           nbdevup=3,
+                                           nbdevdn=3,
+                                           # Moving average type: simple moving average here
+                                           matype=0)
+
+
+    WMA = talib.MA(close_return, 30, matype=2)
+    TEMA = talib.MA(close_return, 30, matype=4)
+
+    rsi = talib.RSI(close_return, timeperiod=6)
+
+    macd, macdsignal, macdhist = talib.MACD(close_return, fastperiod=12, slowperiod=26, signalperiod=9)
+    elas, p = get_probability_indicator(close_return, lmd_1=0.475, lmd_2=0.4)
+
+    mat = close_return
+    mat = np.column_stack((mat, upper))
+    mat = np.column_stack((mat, middle))
+    mat = np.column_stack((mat, lower))
+
+    mat = np.column_stack((mat, upper1))
+    mat = np.column_stack((mat, middle1))
+    mat = np.column_stack((mat, lower1))
+
+    mat = np.column_stack((mat, upper2))
+    mat = np.column_stack((mat, middle2))
+    mat = np.column_stack((mat, lower2))
+
+    mat = np.column_stack((mat, WMA))
+    mat = np.column_stack((mat, TEMA))
+    mat = np.column_stack((mat, rsi))
+    mat = np.column_stack((mat, macd))
+    mat = np.column_stack((mat, macdsignal))
+    mat = np.column_stack((mat, macdhist))
+    mat = np.column_stack((mat, p))
+    mat = np.column_stack((mat, elas))
+
+    return mat
+
+def get_indicators(close_price,close_return):
+    #mat1 = get_indicators_close(close_price)
+    mat2 = get_indicators_return(close_return)
+    #mat = np.column_stack((mat1, mat2))
+    mat = mat2
+    return mat
+
 def get_legal_input(indicators,statistics_len):  
     """ """
     nan_num = max(np.where(np.isnan(indicators))[0])
@@ -381,7 +463,30 @@ def get_x_y_bottomTopUpDown(close, parameter_dict):#BottomTopUpDown
     raw_y = np.array(raw_y)
     close = np.array(close.tolist())
     return_rate = np.diff(close) / close[:-1]
-    raw_x = get_indicators(return_rate)
+    raw_x = get_indicators(close[1:],return_rate)
+    # print 'filtered_close',len(filtered_close),filtered_close[:10]
+    nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
+    NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
+    extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime']
+    if NTradeDays_for_indicatorCalculation < nan_num:
+        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN+1,i.e.%s' % str(nan_num ))
+
+    x = raw_x[NTradeDays_for_indicatorCalculation-1:-extraTradeDays_afterEndTime]
+    labels = raw_y[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
+    close_for_use = close[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
+    filter_data_for_use = filtered_data[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
+    print('x,y,close,filtered_close',x.shape,labels.shape,close_for_use.shape, filter_data_for_use.shape)
+
+    return x, labels.astype(np.int), filter_data_for_use, close_for_use
+
+def get_x_y_bottomTopUpDown2(close, parameter_dict):#BottomTopUpDown
+    """ """
+    raw_y, filtered_data = get_tag_bottomTopUpDown(close, parameter_dict)
+
+    raw_y = np.array(raw_y)
+    close = np.array(close.tolist())
+    #return_rate = np.diff(close) / close[:-1]
+    raw_x = get_indicators(close)
     # print 'filtered_close',len(filtered_close),filtered_close[:10]
     nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
@@ -390,13 +495,14 @@ def get_x_y_bottomTopUpDown(close, parameter_dict):#BottomTopUpDown
         raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN+1,i.e.%s' % str(nan_num ))
 
 
-    x = raw_x[NTradeDays_for_indicatorCalculation - 1:-extraTradeDays_afterEndTime]
+    x = raw_x[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
     labels = raw_y[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
     close_for_use = close[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
     filter_data_for_use = filtered_data[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
     print('x,y,close,filtered_close',x.shape,labels.shape,close_for_use.shape, filter_data_for_use.shape)
 
     return x, labels.astype(np.int), filter_data_for_use, close_for_use
+
 
 def get_balanced_datasets(x,y,parameter_dict):
     nb_class = parameter_dict['nb_classes']

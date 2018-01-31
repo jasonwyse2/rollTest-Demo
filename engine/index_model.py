@@ -55,12 +55,12 @@ def __get_tenserflow_inputOutput(self):
     return input_list, output_list
 
 def evaluate(train_x,train_y,valid_x,vliad_y,save_name,parameter_dict):
-    #train_int, valid_int =im.evaluate(train_x,train_y,valid_x,vliad_y,save_name,data_parameter_dict)
+    #train_int, valid_int =im.evaluate(train_x,train_y,valid_x,vliad_y,save_name,data_parameters_dict)
     #return train_int,valid_int
     pass
 
 def test(test_x,test_y,save_name,parameter_dict):
-    #confu_df = im.test(test_x,test_y,save_name,data_parameter_dict)
+    #confu_df = im.test(test_x,test_y,save_name,data_parameters_dict)
     #return confu_df
     pass
 

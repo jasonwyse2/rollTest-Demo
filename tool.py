@@ -20,19 +20,20 @@ myfont = FontProperties(fname='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', si
 rcParams['font.sans-serif'] = ['SimHei']
 rcParams['axes.unicode_minus'] = False  # 解决负号'-'显示为方块的问题
 
-def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig_path,
+def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig_path, code_wind,
                                 label = ['sharp up','sharp down','gentle up','gentle down'],
                                 color = ['red','green','violet','lightgreen'],
                                 interval=5):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 80
-    # y_true = y_list[0]
-    # y_predict = y_list[1]
-    title_list = ['True labels', 'Predict labels']
+    true_labels_title = code_wind + '-True labels'+' (Time: %s-%s)'%( str(date[0][0]),str(date[-1][0]))
+    predict_labels_title = code_wind + '-Predict labels'+' (Time: %s-%s)'%(str(date[0][0]), str(date[-1][0]))
+    title_list = [true_labels_title, predict_labels_title]
     with PdfPages(fig_path) as pdf:
         plt.figure(figsize=(40, 25))#
         figure_position = [211,212]
+        plt.title(code_wind)
         for i in range(len(y_list)):
             ax = plt.subplot(figure_position[i])
             plt.sca(ax)
@@ -51,10 +52,10 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
             for i in range(close.shape[0]):
                 if i % interval == 0:
                     interval_idx_list.append(i)
-                    interval_date_list.append(date[i])
+                    interval_date_list.append(date[i][0])
             plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
             plt.xticks(rotation=80, fontsize=15)
-            #plt.grid
+            plt.grid()
             #plt.xlabel('time',fontsize=20)
 
         pdf.savefig()
@@ -281,8 +282,11 @@ def get_dataframe_between_start_end(startTime, endTime, parameter_dict):
     return df_start_end
 
 def save_allConfuseMatrix(allConfuseMatrix, parameter_dict, type = 'train'):
+    code_wind = parameter_dict['code_wind']
+    test_mostStartTime =  parameter_dict['test_mostStartTime']
+    test_mostEndTime = parameter_dict['test_mostEndTime']
     underlyingTime_directory = get_underlyingTime_directory(parameter_dict)
-    allConfuseMatrix_fileName = underlyingTime_directory + 'rollTest_ConfuseMatrix-'+type+'.csv'
+    allConfuseMatrix_fileName = underlyingTime_directory + code_wind+'-roll_ConfuseMatrix-'+type+'.csv'
     allConfuseMatrix.to_csv(allConfuseMatrix_fileName, encoding='utf-8')
 
 

@@ -23,7 +23,7 @@ class Your_Data(base.Data):
     def __init__(self, data_parameters_obj):
         self._data_parameters_obj = data_parameters_obj
         self.__checkLegalInput()
-
+#        self.__dayOrMinute()
     def __checkLegalInput(self):
         #### check legality for train data ###
         train_endTime = self._data_parameters_obj._args['train_endTime']
@@ -175,7 +175,7 @@ class Your_Data(base.Data):
             get_balanced_shuffled_datasets(train_x_ndarray, train_x_label_ndarray, parameter_dict)
         print 'balancedShuffled_train_x.shape', balancedShuffled_train_x.shape
         #balancedShuffled_valid_x, balancedShuffled_valid_y = \
-        #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameter_dict)
+        #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameters_dict)
         balancedShuffled_valid_x = valid_x_ndarray.reshape(-1, valid_x_ndarray.shape[1], 1, 1)
         balancedShuffled_valid_y = valid_x_label_ndarray
         #balancedShuffled_valid_x, balancedShuffled_valid_y = valid_x_ndarray, valid_x_label_ndarray
@@ -203,7 +203,7 @@ class Your_Data(base.Data):
             get_balanced_shuffled_datasets(train_x_ndarray, train_x_label_ndarray, data_parameter_dict)
         print 'balancedShuffled_train_x.shape', balancedShuffled_train_x.shape
         #balancedShuffled_valid_x, balancedShuffled_valid_y = \
-        #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameter_dict)
+        #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameters_dict)
         balancedShuffled_valid_x = valid_x_ndarray.reshape(-1, valid_x_ndarray.shape[1], 1, 1)
         balancedShuffled_valid_y = valid_x_label_ndarray
         #balancedShuffled_valid_x, balancedShuffled_valid_y = valid_x_ndarray, valid_x_label_ndarray
@@ -259,7 +259,7 @@ class Your_Model(base.Model):
         parameter_directory = tool.get_underlyingTime_directory(data_parameter_dict)
         parameter_fileName = parameter_directory + 'parameter.json'
         file_obj = open(parameter_fileName, 'w')
-        save_parameter_dict = {'data_parameter_dict':data_parameter_dict, 'model_parameter_dict':model_parameter_dict}
+        save_parameter_dict = {'data_parameters_dict':data_parameter_dict, 'model_parameter_dict':model_parameter_dict}
         file_obj.write(json.dumps(save_parameter_dict))
         file_obj.close()
         # post process parameter data in the file easy to read for people
@@ -318,7 +318,7 @@ class Your_Model(base.Model):
     def _clean(self):
         data_obj = self._data_obj
         parameter_dict = data_obj._data_parameters_obj._args
-        #data_parameter_dict.pop('currenttime_str') ## internal variable, only used during iteration
+        #data_parameters_dict.pop('currenttime_str') ## internal variable, only used during iteration
         pass
 
 
