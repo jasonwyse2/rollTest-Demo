@@ -21,7 +21,7 @@ def get_indicators(close_price):
                                         # number of non-biased standard deviations from the mean
                                         nbdevup=2,
                                         nbdevdn=2,
-                                        # Moving average type: simple moving average here
+                                        # Moving average dataType: simple moving average here
                                         matype=0)
                                         
     WMA = talib.MA(close_price, 30, matype=2)
@@ -136,7 +136,7 @@ def get_datasets_2(close,pct, parameter_dict):
     # # print np.where(labels == 2)[0]
     # # print np.where(labels == 3)[0]
     # # print np.where(labels == 4)[0]
-    # # print type(filtered_close_for_use)
+    # # print dataType(filtered_close_for_use)
     # import matplotlib.pyplot as plt
     # filtered_close_for_use = np.array(filtered_close_for_use)
     labels = labels -1

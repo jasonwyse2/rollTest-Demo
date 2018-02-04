@@ -97,7 +97,7 @@ def get_all_factors(open, high, low, close, volume):
                                         # number of non-biased standard deviations from the mean
                                         nbdevup=2,
                                         nbdevdn=2,
-                                        # Moving average type: simple moving average here
+                                        # Moving average dataType: simple moving average here
                                         matype=0)
     # =========================================== SAR ============================================
     sar = talib.SAR(high, low, acceleration=0.05, maximum=0.2)

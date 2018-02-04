@@ -27,8 +27,8 @@ class Data:
         print('prepare data...')
     def read_data_from_file(self,file_path):
         '''
-        :param parameter: pass a dictionary type variable
-        :return: return a dataframe type retult
+        :param parameter: pass a dictionary dataType variable
+        :return: return a dataframe dataType retult
         '''
         #file_path = parameter['file_path']
         #csv_path = '/mnt/aidata/生成数据/加噪数据/000905generate_dataset02.csv'
@@ -37,8 +37,8 @@ class Data:
         print('read_data_from_file')
     def read_data_from_database(self,parameter):
         '''
-        :param parameter: pass a dictionary type variable
-        :return: return a dataframe type retult
+        :param parameter: pass a dictionary dataType variable
+        :return: return a dataframe dataType retult
         '''
         connect = pymysql.Connect(self._host, self._port, self._portuser, self._passwd, self._db)
         print('read_data_from_file')

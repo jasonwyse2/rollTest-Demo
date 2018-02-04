@@ -21,9 +21,7 @@ rcParams['font.sans-serif'] = ['SimHei']
 rcParams['axes.unicode_minus'] = False  # 解决负号'-'显示为方块的问题
 
 def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig_path, code_wind,
-                                label = ['sharp up','sharp down','gentle up','gentle down'],
-                                color = ['red','green','violet','lightgreen'],
-                                interval=5):
+                                label, color, interval=5):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 80
@@ -56,13 +54,12 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
             plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
             plt.xticks(rotation=80, fontsize=15)
             plt.grid()
-            #plt.xlabel('time',fontsize=20)
 
         pdf.savefig()
         plt.close()
 
-def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up','sharp down','gentle up','gentle down'],
-                    color=['red', 'green', 'violet', 'lightgreen'], interval=5):
+def save_figure_pdf(filtered_close, close, date, y, fig_path,
+                    label, color, interval=5):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 30
@@ -74,8 +71,7 @@ def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up
         plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c=color[0], label=label[0], s=point_size)
         plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c=color[1], label=label[1], s=point_size)
         plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c=color[2], label=label[2], s=point_size)
-        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c=color[3], label=label[3],
-                    s=point_size)
+        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c=color[3], label=label[3], s=point_size)
         #plt.legend(prop=myfont)
         plt.legend(fontsize=20)
         interval_idx_list = []
@@ -90,24 +86,6 @@ def save_figure_pdf(filtered_close, close, date, y, fig_path, label = ['sharp up
         pdf.savefig()
         plt.close()
 
-
-
-def save_figure_pdf_kneeUpDown(filtered_close, close, date, y, fig_path):
-
-    filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
-    point_size = 30
-    plt.figure(figsize=(20, 10))
-    plt.xticks(range(close.shape[0]), date)
-    plt.xticks(rotation=60, fontsize =13)
-    plt.plot(range(close.shape[0]), filtered_close)
-    plt.plot(range(close.shape[0]), close)
-    plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c='red', label=u'谷底', s=point_size)
-    plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c='green', label=u'上涨', s=point_size)
-    plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c='violet', label=u'顶点', s=point_size)
-    plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c='lightgreen', label=u'下跌', s=point_size)
-    plt.legend(prop=myfont)
-    plt.savefig(fig_path)
-    plt.close()
 def show_fig(labels,filter_data_for_use,close_for_use,label = ['sharp up','sharp down','gentle up','gentle down']):
 
     import matplotlib.pyplot as plt
@@ -124,42 +102,56 @@ def show_fig(labels,filter_data_for_use,close_for_use,label = ['sharp up','sharp
     plt.show()
 
 def confuse_matrix(y_true, y_predict, parameter_dict):
-    # confusion_matrix(y_true, y_pred), be aware y_true and y_pred should have the same type
+    # confusion_matrix(y_true, y_pred), be aware y_true and y_pred should have the same dataType
     nb_classes = parameter_dict['nb_classes']
     confusion_result = confusion_matrix(np.array(y_true), np.array(y_predict),labels=range(nb_classes))
     confuse_matrix = pd.DataFrame(confusion_result)
-    # column is predict
-    # print('        *** Confusion Matrix ***')
-    # print('====================================================')
-    column_list = []
-    for i in range(confuse_matrix.shape[1]):
-        column_list.append('pred ' + str(i))
-    confuse_matrix.columns = column_list
-    index_list = []
-    for i in range(confuse_matrix.shape[0]):
-        index_list.append('real ' + str(i))
-    confuse_matrix.index = index_list
-
-    #print confuse_matrix
+    fourlabelType = parameter_dict['taskType']
     confuse = confuse_matrix.as_matrix()
-    pred_acc_per_class = np.diag(confuse).astype(np.float) / np.sum(confuse, axis=0)
-    #### remove 'nan' value in 'pred_acc_per_class'
-    pred_acc_per_class[np.where(np.isnan(pred_acc_per_class))]=0
-    # print('predict_accuracy_per_class:', pred_acc_per_class)
+    if fourlabelType == 'BottomTopUpDown':#['bottom', 'up', 'top', 'down']
+        label_list = parameter_dict['label_BottomTopUpDown']
+        real_array = np.row_stack([confuse[1, :] + confuse[2, :], confuse[0, :] + confuse[3, :]])
+        upDown_confuseMatrix = np.column_stack([real_array[:, 1] + real_array[:,2], real_array[:, 0] + real_array[:,3]])
+        upDown_accuracy = np.diag(upDown_confuseMatrix).astype(np.float) / np.sum(upDown_confuseMatrix, axis=0)
+    elif fourlabelType == 'SharpGentleUpDown':#['sharp up', 'sharp down', 'gentle up', 'gentle down'],
+        label_list = parameter_dict['label_SharpGentleUpDown']
 
-    startTime, endTime, train_lookBack, valid_lookBack = get_start_end_lookback(parameter_dict)
-    confuse_matrix.loc['accuracy(%s-%s)'%(startTime,endTime)] = pred_acc_per_class
+        real_array = np.row_stack([confuse[0, :] + confuse[2, :], confuse[1, :] + confuse[3, :]])
+        upDown_confuseMatrix = np.column_stack([real_array[:, 0] + real_array[:,2], real_array[:, 1] + real_array[:,3]])
+        upDown_accuracy = np.diag(upDown_confuseMatrix).astype(np.float) / np.sum(upDown_confuseMatrix, axis=0)
+    else:
+        raise Exception('unknown taskType:%s' % fourlabelType)
+    index_label_list = ['real-' + v for v in label_list]
+    column_label_list = ['pred-' + v for v in label_list]
+    confuse_matrix.index = index_label_list
+    confuse_matrix.columns = column_label_list
+    # column_list = []
+    # for i in range(confuse_matrix.shape[1]):
+    #     column_list.append('pred ' + str(i))
+    # confuse_matrix.columns = column_list
+    # index_list = []
+    # for i in range(confuse_matrix.shape[0]):
+    #     index_list.append('real ' + str(i))
+    # confuse_matrix.index = index_list
 
-    # print('Average accuracy:', np.mean(pred_acc_per_class))
-    #average_accuracy_allClass = np.mean(pred_acc_per_class[np.where(pred_acc_per_class>0)])
+
+    predict_accuracy_per_class = np.diag(confuse).astype(np.float) / np.sum(confuse, axis=0)
+    #### remove 'nan' value in 'predict_accuracy_per_class'
+    predict_accuracy_per_class[np.where(np.isnan(predict_accuracy_per_class))]=0
+
+    #startTime, endTime, train_lookBack, valid_lookBack = get_start_end_lookback(parameter_dict)
+    startTime, endTime = get_start_end(parameter_dict)
+    confuse_matrix.loc['accuracy(%s-%s)'%(startTime,endTime)] = predict_accuracy_per_class
     average_accuracy_allClass = np.sum(np.diag(confuse).astype(np.float))/np.sum(confuse)
+
     confuse_matrix.loc['average'] = [average_accuracy_allClass,np.nan,np.nan,np.nan]
+    confuse_matrix.loc['binary-up'] = [upDown_accuracy[0],np.nan,np.nan,np.nan]
+    confuse_matrix.loc['binary-down'] = [upDown_accuracy[1],np.nan,np.nan,np.nan]
     return confuse_matrix
 
 def make_directory(dir):
     '''
     :param dir: if dir exist, do nothing, else create a director named 'dir'
-    :return:
     '''
     if  not os.path.exists(dir):
         os.makedirs(dir)
@@ -169,24 +161,28 @@ def currentTime_toString():
     currenttime_str = time.strftime(ISOTIMEFORMAT, time.localtime())
     return currenttime_str
 
-def get_onlyFileName(parameter_dict):
-    dataType = parameter_dict['dataType']
-    if dataType == 'train_valid':
-        middle_str = parameter_dict['train_endTime']
-    elif dataType == 'test':
-        middle_str = ''
-    elif dataType == 'train' or dataType == 'valid':
-        middle_str = ''
-    else:
-        raise Exception('illegal dataType:%s' % dataType)
-    startTime, endTime, train_lookBack, valid_lookBack = get_start_end_lookback(parameter_dict)
-    start_str = startTime if not startTime == '' else 'StartNotGiven'
-    train_lookBack_str = str(train_lookBack) if not str(train_lookBack) == '0' else ''
-    valid_lookBack_str = str(valid_lookBack) if not str(valid_lookBack) == '0' else ''
-    code_wind = parameter_dict['code_wind']
-
-    file_name = code_wind + '-' + start_str + '-' + middle_str + '-' + endTime + '-' \
-                + train_lookBack_str + '-' + valid_lookBack_str + '-' + dataType
+def get_onlyFileName(data_parameter_dict):
+    dataType = data_parameter_dict['dataType']
+    # if dataType == 'train_valid':
+    #     middle_str = data_parameter_dict['train_endTime']
+    # elif dataType == 'test':
+    #     middle_str = ''
+    # elif dataType == 'train' or dataType == 'valid':
+    #     middle_str = ''
+    # else:
+    #     raise Exception('illegal dataType:%s' % dataType)
+    #startTime, endTime, train_lookBack, valid_lookBack = get_start_end_lookback(data_parameter_dict)
+    startTime, endTime = get_start_end(data_parameter_dict)
+    code_wind = data_parameter_dict['code_wind']
+    if not data_parameter_dict.has_key('currenttime_str'):
+        currenttime_str = currentTime_toString()
+        data_parameter_dict['currenttime_str'] = currenttime_str
+    timeStamp = data_parameter_dict['currenttime_str']
+    dayOrMinute = data_parameter_dict['dayOrMinute']
+    taskType = data_parameter_dict['taskType']
+    seq = [code_wind, dayOrMinute, taskType, startTime, endTime, timeStamp, dataType]
+    file_name = '_'.join(seq)
+    #file_name = code_wind + '_' + dayOrMinute + startTime  + '-' + endTime + '_' + timeStamp+'_'+dataType
     return file_name
 
 def get_underlyingTime_directory(parameter_dict):
@@ -196,7 +192,8 @@ def get_underlyingTime_directory(parameter_dict):
     if not parameter_dict.has_key('currenttime_str'):
         currenttime_str = currentTime_toString()
         parameter_dict['currenttime_str'] = currenttime_str
-    underlyingTime_directory = project_directory+ code_wind + '_' + parameter_dict['currenttime_str'] + '_'+task_description+'/'
+    seq = [code_wind, task_description, parameter_dict['currenttime_str']]
+    underlyingTime_directory = project_directory+ '_'.join(seq) +'/'
 
     return underlyingTime_directory
 
@@ -219,8 +216,6 @@ def get_codeID_by_codeWind(parameter_dict,code_wind, type):
 def get_minute_data(parameter_dict, minuteData_usedFor='train'):
     pass
 
-def get_tradeDays_between_start_end(dateStart,dateEnd):
-    pass
 def get_start_end_lookback(parameter_dict):
     train_lookBack = 0
     valid_lookBack = 0
@@ -270,31 +265,49 @@ def get_start_end_lookback(parameter_dict):
         endTime = ''
     return startTime,endTime,train_lookBack, valid_lookBack
 
+def get_start_end(parameter_dict):
+
+    if parameter_dict['dataType'] == 'test':
+        startTime = parameter_dict['test_startTime']
+        endTime = parameter_dict['test_endTime']
+
+    elif parameter_dict['dataType'] == 'valid':
+        startTime = parameter_dict['valid_startTime']
+        endTime = parameter_dict['valid_endTime']
+
+    elif parameter_dict['dataType'] == 'train':
+        startTime = parameter_dict['train_startTime']
+        endTime = parameter_dict['train_endTime']
+
+    elif parameter_dict['dataType'] == 'rollTestAll':
+        startTime = parameter_dict['test_mostStartTime']
+        endTime = parameter_dict['test_mostEndTime']
+    else:
+        startTime = ''
+        endTime = ''
+    return startTime,endTime
 
 def get_dataframe_between_start_end(startTime, endTime, parameter_dict):
     code_wind, stock_type = parameter_dict['code_wind'], parameter_dict['stock_type']
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
-    table, field = parameter_dict['db_table'], parameter_dict['db_table_field']
+    table, field = parameter_dict['db_table'], parameter_dict['db_field']
     sql = 'select %s ' % field + 'from %s ' % table + \
           'where code_id = %s  and date>= %s and date<%s ' % (code_id, startTime, endTime)
     df_start_end = pd.read_sql(sql, conn)
     return df_start_end
 
-def save_allConfuseMatrix(allConfuseMatrix, parameter_dict, type = 'train'):
+def save_allConfuseMatrix(allConfuseMatrix, parameter_dict, dataType = 'train'):
     code_wind = parameter_dict['code_wind']
-    test_mostStartTime =  parameter_dict['test_mostStartTime']
-    test_mostEndTime = parameter_dict['test_mostEndTime']
     underlyingTime_directory = get_underlyingTime_directory(parameter_dict)
-    allConfuseMatrix_fileName = underlyingTime_directory + code_wind+'-roll_ConfuseMatrix-'+type+'.csv'
+    allConfuseMatrix_fileName = underlyingTime_directory + code_wind+'-roll_ConfuseMatrix-'+dataType+'.csv'
     allConfuseMatrix.to_csv(allConfuseMatrix_fileName, encoding='utf-8')
-
 
 def get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_startTime, parameter_dict):
     code_wind, stock_type = parameter_dict['code_wind'], parameter_dict['stock_type']
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
-    table, field = parameter_dict['db_table'], parameter_dict['db_table_field']
+    table, field = parameter_dict['db_table'], parameter_dict['db_field']
     sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and date < %s ' % (code_id, startTime) \
           + 'order by date desc limit %s ' % NTradeDays_before_startTime
     df_data_descendByDate = pd.read_sql(sql, conn)
@@ -308,7 +321,7 @@ def get_dataframe_NTradeDays_after_endTime(endTime, extraTradeDays_afterEndTime,
     code_wind, stock_type = parameter_dict['code_wind'], parameter_dict['stock_type']
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
-    table, field = parameter_dict['db_table'], parameter_dict['db_table_field']
+    table, field = parameter_dict['db_table'], parameter_dict['db_field']
     sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and date >= %s ' % (code_id, endTime) \
           + 'order by date limit %s ' % extraTradeDays_afterEndTime
     df_data_ascendByDate = pd.read_sql(sql, conn)
@@ -341,10 +354,9 @@ def get_daily_data(parameter_dict):
         raise Exception('illegal dataType:%s, not support now'%dataType)
 
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
-    # extraTradeDays_beforeStartTime_for_filter = parameter_dict['extraTradeDays_beforeStartTime_for_filter']
-    filter_windowSize= parameter_dict['filter_windowSize']
-    extraTradeDays_afterEndTime = int(filter_windowSize)/2  if filter_windowSize%2==1 else (int(filter_windowSize)/2-1)
-    parameter_dict['extraTradeDays_afterEndTime'] = extraTradeDays_afterEndTime
+
+    extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime']
+    # parameter_dict['extraTradeDays_afterEndTime'] = extraTradeDays_afterEndTime
     #NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation + extraTradeDays_beforeStartTime_for_filter
     NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation
     df_front_extraTradeDays = get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_startTime, parameter_dict)
@@ -354,25 +366,6 @@ def get_daily_data(parameter_dict):
     df = pd.concat([df_front_extraTradeDays,df_between_start_end, df_end_extraTradeDays])
     df.index = range(len(df.index))
     return df
-
-def get_fileName_by_startEndLookback(parameter_dict, dataType = 'train_valid'):
-    if dataType == 'train_valid':
-        middle_str = parameter_dict['train_endTime']
-    else:
-        middle_str = ''
-    dailyData_usedFor = parameter_dict['dataType']
-    startTime, endTime, train_lookBack,valid_lookBack = get_start_end_lookback(parameter_dict)
-    start_str = startTime if not startTime=='' else 'StartNotGiven'
-    lookBack_from_endTime_str = str(train_lookBack) if not '' else 'LookBackNotGiven'
-    valid_lookBack_str = str(valid_lookBack)
-    code_wind = parameter_dict['code_wind']
-    simulativeCloseSeries_directory = parameter_dict['simulativeCloseSeries_directory']
-    postfix = parameter_dict['dataFile_postfix']
-    make_directory(simulativeCloseSeries_directory)
-    name = simulativeCloseSeries_directory+code_wind+'-'+start_str+'-'+middle_str+'-'+endTime+'-'\
-           +lookBack_from_endTime_str+'-'+valid_lookBack_str+'-'+dailyData_usedFor
-    fileName = name+postfix
-    return fileName
 
 def simulative_close_generator(raw_data_df, parameter_dict):
     # fake high frequency single generate
@@ -428,6 +421,7 @@ def currentDay_backward_delta(currentTime, deltaTime):
     delta = datetime.timedelta(deltaTime)
     cutTime = (curr + (-1)* delta).strftime('%Y%m%d')
     return cutTime
+
 if __name__ == '__main__':
     # conn = login_MySQL()
     # sql = 'select * from stock_date where code_id = 1'
@@ -437,15 +431,3 @@ if __name__ == '__main__':
     #print currentTime_toString()
     pass
     #plt.figure(1)
-    plt.figure(2)
-    ax1 = plt.subplot(211)
-    ax2 = plt.subplot(212)
-    x = np.linspace(0,3,100)
-    for i in xrange(2):
-        #plt.figure(1)
-        #plt.plot(x,np.exp(i*x/3))
-        plt.sca(ax1)
-        plt.plot(x,np.sin(i*x))
-        plt.sca(ax2)
-        plt.plot(x,np.cos(i*x))
-    plt.show()
