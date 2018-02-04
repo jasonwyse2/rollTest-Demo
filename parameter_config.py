@@ -11,7 +11,7 @@ def set_additional_parameters(hyper_parameter_dict, data_parameters_dict):
 
     config_other_parameter(hyper_parameter_dict, data_parameters_dict)
 
-    #return data_parameters_dict
+
 def config_other_parameter(hyper_parameter_dict, data_parameters_dict):
     data_parameters_dict['test_mostStartTime'] = data_parameters_dict['test_startTime']
     data_parameters_dict['test_mostEndTime'] = data_parameters_dict['test_endTime']
@@ -62,8 +62,8 @@ def config_dayOrMinute_parameter(hyper_parameter_dict, data_parameters_dict):
             hyper_parameter_dict['minute_valid_endTime'] if hyper_parameter_dict['minute_test_endTime']=='' else hyper_parameter_dict['minute_test_endTime']
         ### set database 'table' and 'field' ####
         #if stock_type == stock_type['SZ_index'] or stock_type['SH_index']:
-        data_parameters_dict['db_table'] = minute_table # hyper_parameter_dict['minute_table']
-        data_parameters_dict['db_field'] = minute_field # hyper_parameter_dict['minute_field']
+        data_parameters_dict['db_table'] = minute_table
+        data_parameters_dict['db_field'] = minute_field
         data_parameters_dict['change_threshold'] = hyper_parameter_dict['minute_change_threshold']
         # train_startTime, train_endTime = data_parameters_dict['minute_train_startTime'], data_parameters_dict['minute_train_endTime']
         # valid_startTime, valid_endTime = data_parameters_dict['minute_valid_startTime'], data_parameters_dict['minute_valid_endTime']

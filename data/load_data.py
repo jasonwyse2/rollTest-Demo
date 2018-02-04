@@ -7,6 +7,7 @@ import datetime
 # from scipy.stats import norm
 import scipy.signal as signal
 import datalib.util.get_3d_data_set as get3d
+import tool
 from keras.utils.np_utils import to_categorical
 # import util.filtered as close_filter
 import matplotlib
@@ -64,23 +65,23 @@ trend_type = {'up': 1, 'down': 0}
 #
 #     return mat
 
-# def get_indicators_return(close_return):
+# def get_indicators_return(close_pct):
 #     """ """
-#     upper, middle, lower = talib.BBANDS(close_return,
+#     upper, middle, lower = talib.BBANDS(close_pct,
 #                                         timeperiod=26,
 #                                         # number of non-biased standard deviations from the mean
 #                                         nbdevup=3,
 #                                         nbdevdn=3,
 #                                         # Moving average dataType: simple moving average here
 #                                         matype=0)
-#     upper1, middle1, lower1 = talib.BBANDS(close_return,
+#     upper1, middle1, lower1 = talib.BBANDS(close_pct,
 #                                            timeperiod=13,
 #                                            # number of non-biased standard deviations from the mean
 #                                            nbdevup=3,
 #                                            nbdevdn=3,
 #                                            # Moving average dataType: simple moving average here
 #                                            matype=0)
-#     upper2, middle2, lower2 = talib.BBANDS(close_return,
+#     upper2, middle2, lower2 = talib.BBANDS(close_pct,
 #                                            timeperiod=5,
 #                                            # number of non-biased standard deviations from the mean
 #                                            nbdevup=2,
@@ -89,15 +90,15 @@ trend_type = {'up': 1, 'down': 0}
 #                                            matype=0)
 #
 #
-#     WMA = talib.MA(close_return, 30, matype=2)
-#     TEMA = talib.MA(close_return, 30, matype=4)
+#     WMA = talib.MA(close_pct, 30, matype=2)
+#     TEMA = talib.MA(close_pct, 30, matype=4)
 #
-#     rsi = talib.RSI(close_return, timeperiod=6)
+#     rsi = talib.RSI(close_pct, timeperiod=6)
 #
-#     macd, macdsignal, macdhist = talib.MACD(close_return, fastperiod=12, slowperiod=26, signalperiod=9)
-#     elas, p = get_probability_indicator(close_return, lmd_1=0.475, lmd_2=0.4)
+#     macd, macdsignal, macdhist = talib.MACD(close_pct, fastperiod=12, slowperiod=26, signalperiod=9)
+#     elas, p = get_probability_indicator(close_pct, lmd_1=0.475, lmd_2=0.4)
 #
-#     mat = close_return
+#     mat = close_pct
 #     mat = np.column_stack((mat, upper))
 #     mat = np.column_stack((mat, middle))
 #     mat = np.column_stack((mat, lower))
@@ -121,9 +122,9 @@ trend_type = {'up': 1, 'down': 0}
 #
 #     return mat
 
-# def get_indicators(close_price,close_return):
+# def get_indicators(close_price,close_pct):
 #     #mat1 = get_indicators_close(close_price)
-#     mat2 = get_indicators_return(close_return)
+#     mat2 = get_indicators_return(close_pct)
 #     #mat = np.column_stack((mat1, mat2))
 #     mat = mat2
 #     return mat
@@ -204,12 +205,30 @@ def tag_upDown(data_afterFilterNTimes):
     
     return  tag_for_upDown
 
-def get_x_y(close, parameter_dict):
+def get_x_y_repeat(raw_data_mat, data_parameters_dict):
+    show_label = data_parameters_dict['show_label']
+    closeSeries_num = raw_data_mat.shape[1]
+    x_list, y_list = [], []
+    filtered_close_list, close_list = [], []
+    for i in range(closeSeries_num):
+        close_array = raw_data_mat[:, i]
+        #close = pd.Series(close_array)
+        x_price_list = [close_array,close_array,close_array,close_array]
+        [x, y, filtered_close_for_use, close_for_use] = get_x_y(x_price_list, data_parameters_dict)
+        if show_label == True:
+            tool.show_fig(y, filtered_close_for_use, close_for_use)
+        x_list.append(x)
+        y_list.append(y)
+        filtered_close_list.append(filtered_close_for_use)
+        close_list.append(close_for_use)
+    return [x_list, y_list, filtered_close_list, close_list]
+
+def get_x_y(x_price_list, parameter_dict):
     fourlabelType = parameter_dict['taskType']
     if fourlabelType == 'SharpGentleUpDown':
-        x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(close, parameter_dict)
+        x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(x_price_list, parameter_dict)
     elif fourlabelType == 'BottomTopUpDown':
-        x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(close, parameter_dict)
+        x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(x_price_list, parameter_dict)
 
     return [x, y, filtered_close_for_use, close_for_use]
 
@@ -269,12 +288,13 @@ def tag_data_sharpGentleUpDown(close, window_size, window_beta, filterTimes_for_
     tag = [tuple_list.index(v) for v in tag_tuple]
     return tag,data_afterNTimesFilter
     
-def get_x_y_sharpGentleUpDown(close, parameter_dict):
+def get_x_y_sharpGentleUpDown(x_price_list, parameter_dict):
     """
         the variables it returns has cut the extraTradeDays for indicator in the top positions and also cut the
         extraTradeDays for tagging data in the last positions. The data it returns is exactly the same size as the
         data between startTime and endTime
     """
+    [open, high, low, close] = x_price_list[0],x_price_list[1],x_price_list[2],x_price_list[3]
     window_size = parameter_dict['filter_windowSize']
     window_beta = parameter_dict['kaiser_beta']
     filterTimes_for_upDown = parameter_dict['filterTimes_for_upDown']
@@ -425,16 +445,16 @@ def get_2labels_upDown(filtered_data, parameter_dict):
 
     return labels
 
-def get_x_y_bottomTopUpDown(close, parameter_dict):#BottomTopUpDown
+def get_x_y_bottomTopUpDown(x_price_list, parameter_dict):#BottomTopUpDown
     """ """
+    [open, high, low, close] = x_price_list[0], x_price_list[1], x_price_list[2], x_price_list[3]
     raw_y, filtered_data = get_tag_bottomTopUpDown(close, parameter_dict)
-
     raw_y = np.array(raw_y)
-    close = np.array(close.tolist())
-    return_rate = np.diff(close) / close[:-1]
+    # close = np.array(close.tolist())
+    # return_rate = np.diff(close) / close[:-1]
     indicator_combination = parameter_dict['indicator_combination']
     get_indicators_handle = get_indicator_combination(indicator_combination)
-    raw_x = get_indicators_handle(return_rate)
+    raw_x = get_indicators_handle(x_price_list)
     #raw_x = get_indicators(close[1:],return_rate)
     # print 'filtered_close',len(filtered_close),filtered_close[:10]
     nan_num = max(np.where(np.isnan(raw_x))[0]) + 1

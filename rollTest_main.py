@@ -25,9 +25,9 @@ if __name__ == '__main__':
         {'db_information':{'host':'192.168.1.11', 'port':3306, 'user':'zqfordinary', 'passwd':'Ab123456', 'db':'stock'},
 
          'underlying': '000905', 'stock_type': stock_type['SH_index'],
-        'dayOrMinute': 'day', # [day, minute]
+        'dayOrMinute': 'day', 'alpha_csv_path': '',# [day, minute, alpha]
          'taskType':'BottomTopUpDown', #[BottomTopUpDown, SharpGentleUpDown]
-        'indicator_combination':'comb_return_1',
+        'indicator_combination':'day_comb_return_1',
 
         'project_directory':'/mnt/aidata/QuantitativePlatform/a-yaogong/',
 
