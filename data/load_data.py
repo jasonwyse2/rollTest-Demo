@@ -1,22 +1,14 @@
 #coding:utf-8
 import pandas as pd
 import numpy as np
-import talib
-# import util.get_3d_data_set as get3d
-import datetime
-# from scipy.stats import norm
 import scipy.signal as signal
 import datalib.util.get_3d_data_set as get3d
 import tool
-from keras.utils.np_utils import to_categorical
-# import util.filtered as close_filter
-import matplotlib
-import os
-
-from data.ProbabilityIndicator import get_probability_indicator, rollstd
-from indicator_config import get_indicator_combination
+from indicator_config import get_indicator_handle
 slope_type = {'sharp':5,'gentle':4}
 trend_type = {'up': 1, 'down': 0}
+day_field='date, open, high, low, close, pct_chg, volume, amt '
+minute_field='time, open, high, low, close, pct_chg, volume, amt '
 # def get_indicators_close(close_price):
 #     """ """
 #     upper, middle, lower = talib.BBANDS(close_price,
@@ -169,7 +161,7 @@ def data_filter_nTimes(close, window_size, window_beta, filterTimes):
         tmp_close = close_filtered_top_end
     #输出为n次滤波后的结果
     data_afterNTimesFilter = tmp_close
-    return  data_afterNTimesFilter
+    return  np.array(data_afterNTimesFilter)
 
 def tag_upDown(data_afterFilterNTimes):
         
@@ -213,8 +205,9 @@ def get_x_y_repeat(raw_data_mat, data_parameters_dict):
     for i in range(closeSeries_num):
         close_array = raw_data_mat[:, i]
         #close = pd.Series(close_array)
-        x_price_list = [close_array,close_array,close_array,close_array]
-        [x, y, filtered_close_for_use, close_for_use] = get_x_y(x_price_list, data_parameters_dict)
+        raw_data_df = pd.DataFrame(close_array)
+        #x_price_list = tool.get_xPriceList(raw_data_mat, data_parameters_dict)
+        [x, y, filtered_close_for_use, close_for_use] = get_x_y(raw_data_df, data_parameters_dict)
         if show_label == True:
             tool.show_fig(y, filtered_close_for_use, close_for_use)
         x_list.append(x)
@@ -223,12 +216,12 @@ def get_x_y_repeat(raw_data_mat, data_parameters_dict):
         close_list.append(close_for_use)
     return [x_list, y_list, filtered_close_list, close_list]
 
-def get_x_y(x_price_list, parameter_dict):
+def get_x_y(raw_data_df, parameter_dict):
     fourlabelType = parameter_dict['taskType']
     if fourlabelType == 'SharpGentleUpDown':
-        x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(x_price_list, parameter_dict)
+        x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(raw_data_df, parameter_dict)
     elif fourlabelType == 'BottomTopUpDown':
-        x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(x_price_list, parameter_dict)
+        x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(raw_data_df, parameter_dict)
 
     return [x, y, filtered_close_for_use, close_for_use]
 
@@ -288,13 +281,17 @@ def tag_data_sharpGentleUpDown(close, window_size, window_beta, filterTimes_for_
     tag = [tuple_list.index(v) for v in tag_tuple]
     return tag,data_afterNTimesFilter
     
-def get_x_y_sharpGentleUpDown(x_price_list, parameter_dict):
+def get_x_y_sharpGentleUpDown(raw_data_df, parameter_dict):
     """
         the variables it returns has cut the extraTradeDays for indicator in the top positions and also cut the
         extraTradeDays for tagging data in the last positions. The data it returns is exactly the same size as the
         data between startTime and endTime
     """
-    [open, high, low, close] = x_price_list[0],x_price_list[1],x_price_list[2],x_price_list[3]
+    dayOrMinute = parameter_dict['dayOrMinute']
+    if dayOrMinute == 'minute_no_simulative':
+        close = np.array(raw_data_df['close'])
+    else:
+        close = np.array(raw_data_df.iloc[:,0])
     window_size = parameter_dict['filter_windowSize']
     window_beta = parameter_dict['kaiser_beta']
     filterTimes_for_upDown = parameter_dict['filterTimes_for_upDown']
@@ -308,18 +305,18 @@ def get_x_y_sharpGentleUpDown(x_price_list, parameter_dict):
                                                                filterTimes_for_sharpGentle=filterTimes_for_sharpGentle,
                                                                slope_threshold=slope_threshold)
     raw_y = np.array(raw_y)
-    close = np.array(close.tolist())
-    return_rate = np.diff(close) / close[:-1]
+    #close = np.array(close.tolist())
+    #return_rate = np.diff(close) / close[:-1]
     ### calculate indicators with log_return, other than 'close' price
     indicator_combination = parameter_dict['indicator_combination']
-    get_indicators_handle = get_indicator_combination(indicator_combination)
-    raw_x = get_indicators_handle(return_rate)
+    get_indicators_handle = get_indicator_handle(indicator_combination)
+    raw_x = get_indicators_handle(raw_data_df)
     #raw_x = get_indicators(close, return_rate)
     # the number of max length of 'nan' in indicators
-    nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
+    Nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
-    if NTradeDays_for_indicatorCalculation < nan_num:
-        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN,i.e.%s' % str(nan_num ))
+    if NTradeDays_for_indicatorCalculation < Nan_num:
+        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN,i.e.%s' % str(Nan_num ))
     # the return_rate of the first day in 'close' can not be calculated, so there is one day miss in the first position
     #  in 'close_return_rate' when comparing with 'close'. When cut 'NTradeDays_for_indicatorCalculation' days in 'close',
     #  we only need to cut 'NTradeDays_for_indicatorCalculation-1' days in 'raw_x'
@@ -327,17 +324,17 @@ def get_x_y_sharpGentleUpDown(x_price_list, parameter_dict):
     # so there is no label for the last day in 'close'. We need to cut one day in the last of 'close' for the alignment
     # with 'labels'. So does 'filter_data_for_use' and 'raw_x_indicators'.
     x = raw_x[NTradeDays_for_indicatorCalculation - 1:-1]
-    labels = raw_y[NTradeDays_for_indicatorCalculation :]
+    y = raw_y[NTradeDays_for_indicatorCalculation :]
     close_for_use = close[NTradeDays_for_indicatorCalculation:-1]
     filter_data_for_use = data_afterNTimesFilter[NTradeDays_for_indicatorCalculation:-1]
 
     # original 'close' has extraTradeDays after 'endTime'. We have cut one day because of 'labels', so we just need to
     # cut 'extraTradeDays-1' days to make the data align with data between startTime and endTime.
     extraTradeDays = extraTradeDays-1
-    x, labels = x[:-extraTradeDays], labels[:-extraTradeDays]
+    x, y = x[:-extraTradeDays], y[:-extraTradeDays]
     filter_data_for_use, close_for_use = filter_data_for_use[:-extraTradeDays], close_for_use[:-extraTradeDays]
-    print('x,y,close,filtered_close', x.shape, labels.shape, close_for_use.shape, filter_data_for_use.shape)
-    return x, labels, filter_data_for_use, close_for_use
+    print('x,y,close,filtered_close', x.shape, y.shape, close_for_use.shape, filter_data_for_use.shape)
+    return x, y, filter_data_for_use, close_for_use
 
 def get_tag_bottomTopUpDown(close, parameter_dict):
     window_size = parameter_dict['filter_windowSize']
@@ -445,23 +442,26 @@ def get_2labels_upDown(filtered_data, parameter_dict):
 
     return labels
 
-def get_x_y_bottomTopUpDown(x_price_list, parameter_dict):#BottomTopUpDown
+def get_x_y_bottomTopUpDown(raw_data_df, parameter_dict):#BottomTopUpDown
     """ """
-    [open, high, low, close] = x_price_list[0], x_price_list[1], x_price_list[2], x_price_list[3]
+    dayOrMinute = parameter_dict['dayOrMinute']
+    if dayOrMinute in  ['minute_no_simulative']:
+        close = np.array(raw_data_df['close'])
+    else:
+        close = np.array(raw_data_df.iloc[:,0])
     raw_y, filtered_data = get_tag_bottomTopUpDown(close, parameter_dict)
     raw_y = np.array(raw_y)
-    # close = np.array(close.tolist())
-    # return_rate = np.diff(close) / close[:-1]
+
     indicator_combination = parameter_dict['indicator_combination']
-    get_indicators_handle = get_indicator_combination(indicator_combination)
-    raw_x = get_indicators_handle(x_price_list)
-    #raw_x = get_indicators(close[1:],return_rate)
+    get_indicators_handle = get_indicator_handle(indicator_combination)
+    raw_x = get_indicators_handle(raw_data_df)
+
     # print 'filtered_close',len(filtered_close),filtered_close[:10]
-    nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
+    Nan_num = max(np.where(np.isnan(raw_x))[0]) + 1
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
     extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime']
-    if NTradeDays_for_indicatorCalculation < nan_num:
-        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN+1,i.e.%s' % str(nan_num ))
+    if NTradeDays_for_indicatorCalculation < Nan_num:
+        raise Exception('"NTradeDays_for_indicatorCalculation" can not be less than NaN,i.e.%s' % str(Nan_num ))
 
     x = raw_x[NTradeDays_for_indicatorCalculation-1:-extraTradeDays_afterEndTime]
     labels = raw_y[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]

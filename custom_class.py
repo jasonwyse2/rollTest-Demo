@@ -69,14 +69,14 @@ class Your_Data(base.Data):
 
     def __read_mat_from_csv(self,dataType=''):
         data_parameter_dict = self._data_parameter_obj._args
-        csv_path = data_parameter_dict['csv_path']
+        csv_path = data_parameter_dict['alpha_csv_path']
         extraTradeDays_afterEndTime = data_parameter_dict['extraTradeDays_afterEndTime']
         NTradeDays_for_indicatorCalculation = data_parameter_dict['NTradeDays_for_indicatorCalculation']
         data_parameter_dict['dataType'] = dataType
         startTime, endTime = tool.get_start_end(data_parameter_dict)
-        raw_df = pd.read_csv(csv_path)
+        raw_df = pd.read_csv(csv_path,header=None)
         date_list = np.array(raw_df.iloc[:, 0].tolist()).astype(np.str)
-
+        #print('%s date_list'%dataType, date_list[:5])
         start_idx = np.where(date_list >= startTime)[0][0]
         end_idx = np.where(date_list < endTime)[0][-1]
         if start_idx < extraTradeDays_afterEndTime:
@@ -84,10 +84,12 @@ class Your_Data(base.Data):
         if end_idx + extraTradeDays_afterEndTime > raw_df.shape[0]:
             raise Exception(
                 '%s end_time %s must be earlyer than %s' % (dataType, endTime, raw_df.ix[raw_df.shape[0] - 3, 0]))
-
-        raw_sample = raw_df.iloc[:, 1:].as_matrix()
-        raw_sample_mat = raw_sample[
-                         start_idx - NTradeDays_for_indicatorCalculation:end_idx + 1 + extraTradeDays_afterEndTime, :]
+        if dataType == 'train' or dataType == 'valid':
+            raw_sample = raw_df.iloc[:, 1:]
+        elif dataType == 'test': # the 0-th column is the time field, we need it to draw figures
+            raw_sample = raw_df
+        raw_sample_mat = raw_sample.iloc[
+                         start_idx-NTradeDays_for_indicatorCalculation :end_idx+1+extraTradeDays_afterEndTime, :]
 
         # if dataType == 'train':
         #     train_start_time = self._data_parameter_obj._args['train_startTime']
@@ -142,9 +144,10 @@ class Your_Data(base.Data):
         show_label = data_parameters_dict['show_label']
         dayOrMinute = data_parameters_dict['dayOrMinute']
         if dayOrMinute == 'alpha':
-            raw_data_mat = self.__read_mat_from_csv(dataType)
+            raw_data_df = self.__read_mat_from_csv(dataType)
+            raw_data_mat = raw_data_df.as_matrix()
             [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(raw_data_mat, data_parameters_dict)
-        elif dayOrMinute == 'day':
+        elif dayOrMinute == 'day' or dayOrMinute == 'minute_simulative':
             raw_data_df = tool.get_daily_data(data_parameters_dict)
             simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, data_parameters_dict)
             datafile_fullName, datafile_name = self._get_dataFileName()
@@ -153,16 +156,17 @@ class Your_Data(base.Data):
 
             simulative_sample_matrix = simulativeCloseSeries_df.as_matrix()
             [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(simulative_sample_matrix, data_parameters_dict)
-        elif dayOrMinute == 'minute':
+        elif dayOrMinute == 'minute_no_simulative': # it has no simulative data
             raw_data_df = tool.get_daily_data(data_parameters_dict)
-            close = np.array(raw_data_df.close.tolist())
-            open = np.array(raw_data_df.open.tolist())
-            high = np.array(raw_data_df.high.tolist())
-            low = np.array(raw_data_df.low.tolist())
-            x_price_list = [open, high, low, close]
+            # close = np.array(raw_data_df.close.tolist())
+            # open = np.array(raw_data_df.open.tolist())
+            # high = np.array(raw_data_df.high.tolist())
+            # low = np.array(raw_data_df.low.tolist())
+            # x_price_list = [open, high, low, close]
+            # x_price_list = []
             x_list, y_list = [], []
             filtered_close_list, close_list = [], []
-            x, y, filtered_close_for_use, close_for_use = get_x_y(x_price_list, data_parameters_dict)
+            x, y, filtered_close_for_use, close_for_use = get_x_y(raw_data_df, data_parameters_dict)
             x_list.append(x)
             y_list.append(y)
             filtered_close_list.append(filtered_close_for_use)
@@ -200,16 +204,34 @@ class Your_Data(base.Data):
 
 
     def _prepare_test_data(self):
-        data_parameters_dict = self._data_parameter_obj._args
-        data_parameters_dict['dataType'] = 'test'
-        df = tool.get_daily_data(data_parameters_dict)
-        extra_front = data_parameters_dict['NTradeDays_for_indicatorCalculation']
-        extra_end = data_parameters_dict['extraTradeDays_afterEndTime']
-        self._test_x_date = df.date[extra_front:-extra_end]
-        close_array = np.array(df['close'].tolist())
-        #close = pd.Series(close_array)
-        x_price_list = [close_array,close_array,close_array,close_array]
-        [self._test_x, self._test_y, self._test_filtered_close_for_use, self._test_close_for_use] = get_x_y(x_price_list, data_parameters_dict)
+        data_parameter_dict = self._data_parameter_obj._args
+        data_parameter_dict['dataType'] = 'test'
+        extra_front = data_parameter_dict['NTradeDays_for_indicatorCalculation']
+        extra_end = data_parameter_dict['extraTradeDays_afterEndTime']
+        dayOrMinute = data_parameter_dict['dayOrMinute']
+        time_field = data_parameter_dict['time_field']
+        if dayOrMinute == 'day':
+            df = tool.get_daily_data(data_parameter_dict)
+            #time_filed = 'date'
+            #close_array = np.array(df['close'].tolist())
+            raw_data_df = pd.DataFrame(df['close'])
+            df_time_field = df.loc[:, [time_field]]
+            self._test_x_date = df_time_field[extra_front:-extra_end]
+        elif dayOrMinute in ['minute_no_simulative']: #[day, minute_no_simulative, minute_simulative, alpha]
+            df = tool.get_daily_data(data_parameter_dict)
+            raw_data_df = df # we need all field to calculate indicator
+            df_time_field = df[time_field]
+            self._test_x_date = df_time_field[extra_front:-extra_end]
+        elif dayOrMinute == 'alpha':
+            df = self.__read_mat_from_csv(dataType='test')
+            self._test_x_date = np.array(df.iloc[extra_front:-extra_end,0].tolist()).astype(np.str)
+            raw_data_df = pd.DataFrame(df.iloc[:,1])
+        elif dayOrMinute in ['minute_simulative']:
+            df = tool.get_daily_data(data_parameter_dict)
+            raw_data_df = pd.DataFrame(df['close'])
+            df_time_field = df[time_field]
+            self._test_x_date = df_time_field[extra_front:-extra_end]
+        [self._test_x, self._test_y, self._test_filtered_close_for_use, self._test_close_for_use] = get_x_y(raw_data_df, data_parameter_dict)
         self._test_x = self._test_x.reshape(-1, self._test_x.shape[1], 1, 1)
         #x, y, filtered_close_for_use, close_for_use = result[0], result[1], result[2], result[3]
         # if fourlabelType == 'SharpGentleUpDown':
@@ -225,7 +247,7 @@ class Your_Data(base.Data):
 
     def _prepare_trainValid_data_separate(self):
         train_x_list, train_y_list, train_filtered_close_list, train_close_list = self._prepare_data(dataType = 'train')
-        valid_x_list, valid_y_list, train_filtered_close_list, train_close_list = self._prepare_data(dataType = 'valid')
+        valid_x_list, valid_y_list, valid_filtered_close_list, valid_close_list = self._prepare_data(dataType = 'valid')
         train_x_ndarray, train_y_ndarray = np.row_stack(train_x_list), np.hstack(train_y_list)
         valid_x_ndarray, valid_y_ndarray = np.row_stack(valid_x_list), np.hstack(valid_y_list)
 

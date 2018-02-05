@@ -6,21 +6,25 @@ import datetime
 import scipy.signal as signal
 import data.datalib.util.get_3d_data_set as get3d
 from data.ProbabilityIndicator import get_probability_indicator
-indicator_comb_list = ['day_comb_return_1', 'comb_return_2', 'minute_comb_1']
+indicator_comb_list = ['day_comb_return_1', 'comb_return_2', 'minute_comb_return_1']
+day_field = 'date, open, high, low, close, pct_chg, volume, amt '
+minute_table = 'index_min'
+minute_field = 'time, open, high, low, close, pct_chg, volume, amt '
 
-def get_indicator_combination(indicatorCombinationName):
+def get_indicator_handle(indicatorCombinationName):
     if indicatorCombinationName=='day_comb_return_1':
-        return get_indicator_comb1
+        return get_indicator_day_comb1
         #mat = get_indicator_comb1()
     elif indicatorCombinationName=='comb_return_2':
         return get_indicator_comb2
     elif indicatorCombinationName=='comb_return_3':
         return get_indicator_comb3
-    elif indicatorCombinationName=='minute_comb_1':
+    elif indicatorCombinationName=='minute_comb_return_1':
         return get_indicator_minute_com1
 
-def get_indicator_comb1(x_price_list):
-    open, high, low, close = x_price_list[0], x_price_list[1], x_price_list[2], x_price_list[3]
+def get_indicator_day_comb1(raw_data_df):
+
+    close = np.array(raw_data_df.iloc[:,0])
     close_pct = np.diff(close) / close[:-1]
     indicator_list = []
     BBANDS_parameter_list = [(26,3,3),(13,2,2),(5,2,2)]
@@ -46,8 +50,8 @@ def get_indicator_comb1(x_price_list):
     for v in indicator_list:
         mat = np.column_stack((mat, v))
     return mat
-def get_indicator_comb2(x_price_list):
-    open, high, low, close = x_price_list[0], x_price_list[1], x_price_list[2], x_price_list[3]
+def get_indicator_comb2(raw_data_df):
+    open, high, low, close = raw_data_df[0], raw_data_df[1], raw_data_df[2], raw_data_df[3]
     close_pct = np.diff(close) / close[:-1]
 
     indicator_list = []
@@ -99,13 +103,15 @@ def get_indicator_comb3(close_return):
         mat = np.column_stack((mat, v))
     return mat
 
-def get_indicator_minute_com1(x_price_list):
+def get_indicator_minute_com1(raw_data_df):
     '''get all factors when n minutes as the period'''
-    open, high, low, close = x_price_list[0], x_price_list[1], x_price_list[2], x_price_list[3]
-    close_pct = np.diff(close) / close[:-1]
+    open, high = np.array(raw_data_df['open']), np.array(raw_data_df['high'])
+    low, close = np.array(raw_data_df['low']), np.array(raw_data_df['close'])
+
     open_pct = np.diff(open) / open[:-1]
     high_pct = np.diff(high) / high[:-1]
     low_pct = np.diff(low) / low[:-1]
+    close_pct = np.diff(close) / close[:-1]
 
     indicator_list = []
     matype_list = [0,1,2,3,4]
@@ -125,7 +131,7 @@ def get_indicator_minute_com1(x_price_list):
     indicator_list.append(rsi)
     # ========================================= KDJ =============================================
     slowk_slowd = talib.STOCH(high_pct, low_pct, close_pct, fastk_period=9,
-                               slowk_period=3, slowd_period=3, lowk_matype=0, slowd_matype=0)
+                               slowk_period=3, slowd_period=3, slowk_matype=0, slowd_matype=0)
     for v in slowk_slowd:
         indicator_list.append(v)
     # ========================================== BOLLING ========================================
@@ -138,9 +144,10 @@ def get_indicator_minute_com1(x_price_list):
     # =========================================== SAR ============================================
     sar = talib.SAR(high_pct, low_pct, acceleration=0.05, maximum=0.2)
     indicator_list.append(sar)
-    mat = x_price_list[0]
-    for i in range(1, len(x_price_list)):
-        np.column_stack((mat, x_price_list[i]))
+    mat = open_pct
+    price_list = [high_pct,low_pct,close_pct]
+    for i in range(1, len(price_list)):
+        np.column_stack((mat, price_list[i]))
     for v in indicator_list:
         mat = np.column_stack((mat, v))
     return mat
@@ -215,7 +222,7 @@ def get_indicator_minute_com1(x_price_list):
 
 if __name__ == '__main__':
     close_pct = np.array([1.0] * 101)
-    mat = get_indicator_comb1(close_pct)
+    mat = get_indicator_day_comb1(close_pct)
     result = talib.BBANDS(close_pct, timeperiod=26, nbdevup=3, nbdevdn=3, matype=0)
     res = []
     for item in result:

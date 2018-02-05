@@ -1,15 +1,16 @@
 
 stock_type = {'SZ_stock': '1', 'SH_stock': '2', 'SZ_index': '100', 'SH_index': '200'}
-day_table='index_date'
+day_table = 'index_date'
 day_field='date, open, high, low, close, pct_chg, volume, amt '
-minute_table= 'index_min'
+minute_table = 'index_min'
 minute_field='time, open, high, low, close, pct_chg, volume, amt '
-def set_additional_parameters(hyper_parameter_dict, data_parameters_dict):
+#indicator_minute_comb_list = ['day_comb_return_1', 'comb_return_2', 'minute_comb_return_1']
+def set_additional_parameters(hyper_parameter_dict, data_parameter_dict):
 
-    config_dayOrMinute_parameter(hyper_parameter_dict, data_parameters_dict)
-    config_taskType_parameter(hyper_parameter_dict, data_parameters_dict)
+    config_dayOrMinute_parameter(hyper_parameter_dict, data_parameter_dict)
+    config_taskType_parameter(hyper_parameter_dict, data_parameter_dict)
 
-    config_other_parameter(hyper_parameter_dict, data_parameters_dict)
+    config_other_parameter(hyper_parameter_dict, data_parameter_dict)
 
 
 def config_other_parameter(hyper_parameter_dict, data_parameters_dict):
@@ -29,45 +30,48 @@ def config_other_parameter(hyper_parameter_dict, data_parameters_dict):
     data_parameters_dict['extraTradeDays_afterEndTime'] = int(windowSize / 2) if windowSize % 2 == 1 else int(
         windowSize / 2) - 1
 
-def config_dayOrMinute_parameter(hyper_parameter_dict, data_parameters_dict):
+def config_dayOrMinute_parameter(hyper_parameter_dict, data_parameter_dict):
     dayOrMinute = hyper_parameter_dict['dayOrMinute']  # dayOrMinute['day', 'minute']
     stock_type = hyper_parameter_dict['stock_type']
-    if dayOrMinute=='day':
-        data_parameters_dict['train_startTime']= hyper_parameter_dict['day_train_startTime']
-        data_parameters_dict['train_endTime'] = hyper_parameter_dict['day_train_endTime']
-        data_parameters_dict['valid_startTime'] = \
+    if dayOrMinute=='day' or dayOrMinute=='alpha':
+        data_parameter_dict['train_startTime']= hyper_parameter_dict['day_train_startTime']
+        data_parameter_dict['train_endTime'] = hyper_parameter_dict['day_train_endTime']
+        data_parameter_dict['valid_startTime'] = \
             hyper_parameter_dict['day_train_endTime'] if hyper_parameter_dict['day_valid_startTime']=='' else hyper_parameter_dict['day_valid_startTime']
-        data_parameters_dict['valid_endTime'] = hyper_parameter_dict['day_valid_endTime']
+        data_parameter_dict['valid_endTime'] = hyper_parameter_dict['day_valid_endTime']
         #### test####
-        data_parameters_dict['test_startTime'] = \
+        data_parameter_dict['test_startTime'] = \
             hyper_parameter_dict['day_train_endTime'] if hyper_parameter_dict['day_test_startTime']=='' else hyper_parameter_dict['day_test_startTime']
-        data_parameters_dict['test_endTime'] =  \
+        data_parameter_dict['test_endTime'] =  \
             hyper_parameter_dict['day_valid_endTime'] if hyper_parameter_dict['day_test_endTime']=='' else hyper_parameter_dict['day_test_endTime']
         ### set database 'table' and 'field' ####
         #if stock_type == stock_type['SZ_index'] or stock_type['SH_index']:
-        data_parameters_dict['db_table'] = day_table # hyper_parameter_dict['day_table']
-        data_parameters_dict['db_field'] = day_field # hyper_parameter_dict['day_field']
-        data_parameters_dict['change_threshold'] = hyper_parameter_dict['dalily_change_threshold']
+        data_parameter_dict['db_table'] = day_table # hyper_parameter_dict['day_table']
+        data_parameter_dict['db_field'] = day_field # hyper_parameter_dict['day_field']
+        data_parameter_dict['time_field'] = 'date'
+        data_parameter_dict['change_threshold'] = hyper_parameter_dict['dalily_change_threshold']
 
-    elif dayOrMinute=='minute':
-        data_parameters_dict['train_startTime'] = hyper_parameter_dict['minute_train_startTime']
-        data_parameters_dict['train_endTime'] = hyper_parameter_dict['minute_train_endTime']
-        data_parameters_dict['valid_startTime'] = \
+    elif dayOrMinute=='minute_simulative' or dayOrMinute=='minute_no_simulative': #[day, minute_no_simulative, minute_simulative, alpha]
+        data_parameter_dict['train_startTime'] = hyper_parameter_dict['minute_train_startTime']
+        data_parameter_dict['train_endTime'] = hyper_parameter_dict['minute_train_endTime']
+        data_parameter_dict['valid_startTime'] = \
             hyper_parameter_dict['minute_train_endTime'] if hyper_parameter_dict['minute_valid_startTime'] =='' else hyper_parameter_dict['minute_valid_startTime']
-        data_parameters_dict['valid_endTime'] = hyper_parameter_dict['minute_valid_endTime']
+        data_parameter_dict['valid_endTime'] = hyper_parameter_dict['minute_valid_endTime']
         #### test####
-        data_parameters_dict['test_startTime'] = \
+        data_parameter_dict['test_startTime'] = \
             hyper_parameter_dict['minute_train_endTime'] if hyper_parameter_dict['minute_test_startTime']=='' else hyper_parameter_dict['minute_test_startTime']
-        data_parameters_dict['test_endTime'] = \
+        data_parameter_dict['test_endTime'] = \
             hyper_parameter_dict['minute_valid_endTime'] if hyper_parameter_dict['minute_test_endTime']=='' else hyper_parameter_dict['minute_test_endTime']
         ### set database 'table' and 'field' ####
         #if stock_type == stock_type['SZ_index'] or stock_type['SH_index']:
-        data_parameters_dict['db_table'] = minute_table
-        data_parameters_dict['db_field'] = minute_field
-        data_parameters_dict['change_threshold'] = hyper_parameter_dict['minute_change_threshold']
-        # train_startTime, train_endTime = data_parameters_dict['minute_train_startTime'], data_parameters_dict['minute_train_endTime']
-        # valid_startTime, valid_endTime = data_parameters_dict['minute_valid_startTime'], data_parameters_dict['minute_valid_endTime']
-        # test_startTime, test_endTime = data_parameters_dict['minute_test_startTime'], data_parameters_dict['minute_test_endTime']
+        data_parameter_dict['db_table'] = minute_table
+        data_parameter_dict['db_field'] = minute_field
+        data_parameter_dict['time_field'] = 'time'
+        data_parameter_dict['change_threshold'] = hyper_parameter_dict['minute_change_threshold']
+        # train_startTime, train_endTime = data_parameter_dict['minute_train_startTime'], data_parameter_dict['minute_train_endTime']
+        # valid_startTime, valid_endTime = data_parameter_dict['minute_valid_startTime'], data_parameter_dict['minute_valid_endTime']
+        # test_startTime, test_endTime = data_parameter_dict['minute_test_startTime'], data_parameter_dict['minute_test_endTime']
+
     else:
         raise Exception('unknown "dayOrMinute":%s'%dayOrMinute)
 

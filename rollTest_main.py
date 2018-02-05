@@ -25,15 +25,17 @@ if __name__ == '__main__':
         {'db_information':{'host':'192.168.1.11', 'port':3306, 'user':'zqfordinary', 'passwd':'Ab123456', 'db':'stock'},
 
          'underlying': '000905', 'stock_type': stock_type['SH_index'],
-        'dayOrMinute': 'day', 'alpha_csv_path': '',# [day, minute, alpha]
-         'taskType':'BottomTopUpDown', #[BottomTopUpDown, SharpGentleUpDown]
-        'indicator_combination':'day_comb_return_1',
+        'dayOrMinute': 'alpha',  # ['day', 'minute_no_simulative', 'minute_simulative', 'alpha']
+         'indicator_combination': 'day_comb_return_1',  # ['day_comb_return_1, minute_comb_return_1']
+         'alpha_csv_path': '/mnt/aidata/生成数据/Alpha扰动300/index_240_test.csv',
+         'taskType':'BottomTopUpDown',  #[BottomTopUpDown, SharpGentleUpDown]
+
 
         'project_directory':'/mnt/aidata/QuantitativePlatform/a-yaogong/',
 
         'day_train_startTime':'20060101','day_train_endTime': '20180115',
-        'day_valid_startTime': '20180115', 'day_valid_endTime': '20180129',
-         'day_test_startTime': '20180115', 'day_test_endTime':'20180129',
+        'day_valid_startTime': '20180101', 'day_valid_endTime': '20180115',
+         'day_test_startTime': '20180101', 'day_test_endTime':'20180115',
         'dalily_change_threshold':0.015,
 
          'minute_train_startTime':'201308010930', 'minute_train_endTime': '201601060930',
@@ -41,7 +43,7 @@ if __name__ == '__main__':
          'minute_test_startTime':'201601010930', 'minute_test_endTime': '201601060930',
          'minute_change_threshold': 0.001,
 
-         'simulativeCloseSeries_num': 1,
+         'simulativeCloseSeries_num': 3,
          'roll_forward': 30 * 3,
          'train_num': 1,
          'rollTest_num': 1
@@ -73,10 +75,11 @@ if __name__ == '__main__':
         code_wind=hyper_parameter_dict['underlying'], stock_type=hyper_parameter_dict['stock_type'],
         project_directory=hyper_parameter_dict['project_directory'],
         dayOrMinute =  hyper_parameter_dict['dayOrMinute'],
+        alpha_csv_path = hyper_parameter_dict['alpha_csv_path'],
         taskType = hyper_parameter_dict['taskType'],
         indicator_combination = hyper_parameter_dict['indicator_combination'],
 
-        NTradeDays_for_indicatorCalculation=100,
+        NTradeDays_for_indicatorCalculation=120,
         filter_windowSize=5, kaiser_beta=2, addNoise_windowSize=5,
 
         nb_classes=4,

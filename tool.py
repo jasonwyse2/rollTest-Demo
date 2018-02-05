@@ -213,8 +213,21 @@ def get_codeID_by_codeWind(parameter_dict,code_wind, type):
     code_id = df.ix[0,0]
     return code_id
 
-def get_minute_data(parameter_dict, minuteData_usedFor='train'):
-    pass
+def get_xPriceList(df, parameter_dict):
+    dayOrMinute = parameter_dict['dayOrMinute']
+    if dayOrMinute == 'alpha':
+        x_price_list = []
+    else:
+        df = pd.DataFrame(df)
+        db_field = parameter_dict['db_field']
+        field_list = []
+        for v in db_field.split(','):
+            field_list.append(v.strip())
+        x_price_list = []
+        for v in field_list:
+            x_price_list.append(df.loc[:,v])
+    return x_price_list
+
 
 def get_start_end_lookback(parameter_dict):
     train_lookBack = 0
@@ -292,8 +305,15 @@ def get_dataframe_between_start_end(startTime, endTime, parameter_dict):
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
     table, field = parameter_dict['db_table'], parameter_dict['db_field']
+    #dayOrMinute = parameter_dict['dayOrMinute']
+
+    # if dayOrMinute=='day':
+    #     time_field = 'date'
+    # elif dayOrMinute in ['minute_no_simulative','minute_simulative'] : # [day, minute_no_simulative, minute_simulative, alpha]
+    #     time_field = 'time'
+    time_field = parameter_dict['time_field']
     sql = 'select %s ' % field + 'from %s ' % table + \
-          'where code_id = %s  and date>= %s and date<%s ' % (code_id, startTime, endTime)
+          'where code_id = %s  and %s>= %s and %s<%s ' % (code_id, time_field, startTime, time_field, endTime)
     df_start_end = pd.read_sql(sql, conn)
     return df_start_end
 
@@ -308,8 +328,14 @@ def get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_start
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
     table, field = parameter_dict['db_table'], parameter_dict['db_field']
-    sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and date < %s ' % (code_id, startTime) \
-          + 'order by date desc limit %s ' % NTradeDays_before_startTime
+    #dayOrMinute = parameter_dict['dayOrMinute']
+    # if dayOrMinute == 'day':
+    #     time_filed = 'date'
+    # elif dayOrMinute in ['minute_no_simulative','minute_simulative']:
+    #     time_filed = 'time'
+    time_field = parameter_dict['time_field']
+    sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and %s < %s ' % (code_id, time_field, startTime) \
+          + 'order by %s desc limit %s ' % (time_field, NTradeDays_before_startTime)
     df_data_descendByDate = pd.read_sql(sql, conn)
     df_data_ascendByDate = df_data_descendByDate.reindex(range(len(df_data_descendByDate.index)-1,-1,-1))
     df_data_ascendByDate.index = range(len(df_data_descendByDate.index))
@@ -322,8 +348,15 @@ def get_dataframe_NTradeDays_after_endTime(endTime, extraTradeDays_afterEndTime,
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
     table, field = parameter_dict['db_table'], parameter_dict['db_field']
-    sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and date >= %s ' % (code_id, endTime) \
-          + 'order by date limit %s ' % extraTradeDays_afterEndTime
+
+    time_field = parameter_dict['time_field']
+    # if dayOrMinute == 'day':
+    #     time_filed = 'date'
+    # elif dayOrMinute in ['minute_no_simulative','minute_simulative']:
+    #     time_filed = 'time'
+    #dayOrMinute = parameter_dict['dayOrMinute']
+    sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and %s >= %s ' % (code_id, time_field, endTime) \
+          + 'order by %s limit %s ' % (time_field, extraTradeDays_afterEndTime)
     df_data_ascendByDate = pd.read_sql(sql, conn)
 
     if df_data_ascendByDate.shape[0] < extraTradeDays_afterEndTime:
@@ -431,3 +464,11 @@ if __name__ == '__main__':
     #print currentTime_toString()
     pass
     #plt.figure(1)
+    # str = 'time, open, high, low, close, pct_chg, volume, amt '
+    # fields = []
+    # for v in str.split(','):
+    #     fields.append(v.strip())
+    # print(fields)
+    lista = ['a','b']
+    a = 'c'
+    print a in lista
