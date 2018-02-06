@@ -9,9 +9,9 @@ import json
 from net import get_net_yield
 import matplotlib.pyplot as plt
 import matplotlib
-def get_roll_start(data_parameters_obj, model_parameters_obj):
-    # data_parameter_obj = model_parameter_obj._args['data_parameter_obj']
-    rollTest_num = model_parameters_obj._args['rollTest_num']
+def get_roll_start(data_parameter_obj, model_parameter_obj):
+    #data_parameter_obj = model_parameter_obj._args['data_parameter_obj']
+    rollTest_num = model_parameter_obj._args['rollTest_num']
     train_confuse_df_all, valid_confuse_df_all, test_confuse_df_all = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     test_y_true_all, test_y_predict_all = pd.DataFrame(), pd.DataFrame()
     test_filtered_close_all, test_close_all, test_date_all = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -21,30 +21,30 @@ def get_roll_start(data_parameters_obj, model_parameters_obj):
         if i == 0:
             pass
         else:
-            roll_forward_day = data_parameters_obj._args['roll_forward']
-
+            roll_forward = data_parameter_obj._args['roll_forward']
+            data_parameter_dict = data_parameter_obj._args
             # data_parameter_obj._args['train_startTime'] = tool.currentDay_forward_delta(
             #     data_parameter_obj._args['train_startTime'], roll_forward)
-            data_parameters_obj._args['train_endTime'] = tool.currentDay_forward_delta(
-                data_parameters_obj._args['train_endTime'], roll_forward_day)
+            data_parameter_obj._args['train_endTime'] = tool.currentTime_forward_delta(
+                data_parameter_obj._args['train_endTime'], roll_forward, data_parameter_dict)
 
-            data_parameters_obj._args['valid_startTime'] = tool.currentDay_forward_delta(
-                data_parameters_obj._args['valid_startTime'], roll_forward_day)
-            data_parameters_obj._args['valid_endTime'] = tool.currentDay_forward_delta(
-                data_parameters_obj._args['valid_endTime'], roll_forward_day)
+            data_parameter_obj._args['valid_startTime'] = tool.currentTime_forward_delta(
+                data_parameter_obj._args['valid_startTime'], roll_forward, data_parameter_dict)
+            data_parameter_obj._args['valid_endTime'] = tool.currentTime_forward_delta(
+                data_parameter_obj._args['valid_endTime'], roll_forward, data_parameter_dict)
 
-            tmpTime = data_parameters_obj._args['test_endTime']
-            data_parameters_obj._args['test_endTime'] = tool.currentDay_forward_delta(
-                data_parameters_obj._args['test_endTime'], roll_forward_day)
-            data_parameters_obj._args['test_startTime'] = tmpTime
+            tmpTime = data_parameter_obj._args['test_endTime']
+            data_parameter_obj._args['test_endTime'] = tool.currentTime_forward_delta(
+                data_parameter_obj._args['test_endTime'], roll_forward, data_parameter_dict)
+            data_parameter_obj._args['test_startTime'] = tmpTime
 
-            data_parameters_obj._args['test_mostEndTime'] = data_parameters_obj._args['test_endTime']
+            data_parameter_obj._args['test_mostEndTime'] = data_parameter_obj._args['test_endTime']
 
-        data_obj = Your_Data(data_parameters_obj)
+        data_obj = Your_Data(data_parameter_obj)
         data_obj._run()
 
-        model_parameters_obj._args['data_obj'] = data_obj
-        model_obj = Your_Model(model_parameters_obj)
+        model_parameter_obj._args['data_obj'] = data_obj
+        model_obj = Your_Model(model_parameter_obj)
         evaluate_return_list, test_return_list = model_obj._run()
 
         # parse results into separate variables

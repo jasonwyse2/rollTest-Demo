@@ -360,8 +360,8 @@ def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
                 pass
 
     knee_close = filtered_data[knee_idx]
-    change_percent = parameter_dict['change_percent']
-    break_t, break_p = get3d.break_point(change_percent, knee_idx, knee_close)
+    change_threshold = parameter_dict['change_threshold']
+    break_t, break_p = get3d.break_point(change_threshold, knee_idx, knee_close)
     if not break_t[-1] == knee_idx[-1]:
         break_t.append(knee_idx[-1])
         break_p.append(knee_close[-1])
@@ -445,7 +445,8 @@ def get_2labels_upDown(filtered_data, parameter_dict):
 def get_x_y_bottomTopUpDown(raw_data_df, parameter_dict):#BottomTopUpDown
     """ """
     dayOrMinute = parameter_dict['dayOrMinute']
-    if dayOrMinute in  ['minute_no_simulative']:
+    minuteType_dict = parameter_dict['minuteType_dict']
+    if dayOrMinute == minuteType_dict['minuteNoSimulative']:
         close = np.array(raw_data_df['close'])
     else:
         close = np.array(raw_data_df.iloc[:,0])

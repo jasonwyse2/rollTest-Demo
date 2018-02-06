@@ -29,23 +29,9 @@ class Your_Data(base.Data):
         train_endTime = self._data_parameter_obj._args['train_endTime']
         if train_endTime=='':
             raise Exception('"train_endTime" can not be empty')
-        # if not train_startTime=='' and not train_lookBack_from_endTime==0:
-        #     raise Exception('"train_startTime" and "train_lookBack_from_endTime" can not be assigned simultaneously')
-        # #### check legality for valid data ###
-        # valid_endTime = self._data_parameter_obj._args['valid_endTime']
-        # if valid_endTime == '':
-        #     raise Exception('"valid_endTime" can not be empty')
-        # valid_startTime = self._data_parameter_obj._args['valid_startTime']
-        # valid_lookBack_from_endTime = self._data_parameter_obj._args['valid_lookBack_from_endTime']
-        # if not valid_startTime == '' and not valid_lookBack_from_endTime == 0:
-        #     raise Exception('"valid_startTime" and "valid_lookBack_from_endTime" can not be assigned simultaneously')
-        #### check legality for test data ###
         test_endTime = self._data_parameter_obj._args['test_endTime']
         if test_endTime == '':
             raise Exception('"test_endTime" can not be empty')
-        # if not test_startTime == '' and not test_lookBack_from_endTime == 0:
-        #     raise Exception(
-        #         '"test_startTime" and "test_lookBack_from_endTime" can not be assigned simultaneously')
 
     def _get_dataFileName(self):
         parameter_dict = self._data_parameter_obj._args
@@ -60,10 +46,6 @@ class Your_Data(base.Data):
         return file_FullName, file_name
 
     def _run(self):
-        # train_valid_type = self._data_parameter_obj._args['train_valid_type']
-        # if train_valid_type=='train_valid_together':
-        #     self._prepare_trainValid_data_together()
-        # elif train_valid_type=='train_valid_separate':
         self._prepare_trainValid_data_separate()
 
 
@@ -74,7 +56,7 @@ class Your_Data(base.Data):
         NTradeDays_for_indicatorCalculation = data_parameter_dict['NTradeDays_for_indicatorCalculation']
         data_parameter_dict['dataType'] = dataType
         startTime, endTime = tool.get_start_end(data_parameter_dict)
-        raw_df = pd.read_csv(csv_path,header=None)
+        raw_df = pd.read_csv(csv_path)
         date_list = np.array(raw_df.iloc[:, 0].tolist()).astype(np.str)
         #print('%s date_list'%dataType, date_list[:5])
         start_idx = np.where(date_list >= startTime)[0][0]
@@ -91,116 +73,42 @@ class Your_Data(base.Data):
         raw_sample_mat = raw_sample.iloc[
                          start_idx-NTradeDays_for_indicatorCalculation :end_idx+1+extraTradeDays_afterEndTime, :]
 
-        # if dataType == 'train':
-        #     train_start_time = self._data_parameter_obj._args['train_startTime']
-        #     train_end_time = self._data_parameter_obj._args['train_endTime']
-        #
-        #     raw_df = pd.read_csv(csv_path)
-        #     date_list = np.array(raw_df.iloc[:,0].tolist()).astype(np.str)
-        #     print 'train_date_list',date_list[:5]
-        #     start_idx = np.where(date_list >= train_start_time)[0][0]
-        #     if start_idx<extraTradeDays_afterEndTime:
-        #         raise Exception('train_start_time %s is too early to train!'%(train_start_time))
-        #
-        #     end_idx = np.where(date_list <= train_end_time)[0][-1]
-        #     if end_idx +extraTradeDays_afterEndTime > raw_df.shape[0]:
-        #         raise Exception('train_end_time %s must be earlyer than %s'%(train_end_time,raw_df.ix[raw_df.shape[0]-3,0]))
-        #     raw_sample = raw_df.iloc[:, 1:].as_matrix()
-        #     raw_sample_mat = raw_sample[start_idx-NTradeDays_for_indicatorCalculation:end_idx + 1+extraTradeDays_afterEndTime, :]
-        #
-        # elif dataType == 'valid':
-        #     valid_start_time = self._data_parameter_obj._args['valid_startTime']
-        #     valid_end_time = self._data_parameter_obj._args['valid_endTime']
-        #     raw_df = pd.read_csv(csv_path)
-        #     date_list = np.array(raw_df.iloc[:,0].tolist()).astype(np.str)
-        #     print('valid_date_list',date_list[:5])
-        #     start_idx = np.where(date_list >= valid_start_time)[0][0]
-        #     end_idx = np.where(date_list <= valid_end_time)[0][-1]
-        #     raw_sample = raw_df.iloc[:, 1:].as_matrix()
-        #     raw_sample_mat = raw_sample[start_idx-NTradeDays_for_indicatorCalculation:end_idx + 1+extraTradeDays_afterEndTime, :]
-        #
-        # elif dataType == 'test':
-        #     test_start_time = self._data_parameter_obj._args['test_startTime']
-        #     test_end_time = self._data_parameter_obj._args['test_endTime']
-        #     raw_df = pd.read_csv(csv_path,header=None)
-        #     date_array = np.array(raw_df.iloc[:,0].tolist()).astype(np.str)
-        #
-        #     start_idx = np.where(date_array>=test_start_time)[0][0]
-        #     end_idx = np.where(date_array<=test_end_time)[0][-1]
-        #
-        #     print('test_date_list', date_array[:5])
-        #     #start_idx = np.where(date_list >= test_start_time)[0][0]
-        #     #end_idx = np.where(date_list <= test_end_time)[0][-1]
-        #     raw_sample_mat = raw_df.iloc[start_idx-NTradeDays_for_indicatorCalculation:end_idx+extraTradeDays_afterEndTime, :]
-        #
-        # else:
-        #     raise Exception('dataType %s is not right'%(dataType))
-
         return raw_sample_mat
 
     def _prepare_data(self,dataType=''):
-        data_parameters_dict = self._data_parameter_obj._args
-        data_parameters_dict['dataType'] = dataType
-        show_label = data_parameters_dict['show_label']
-        dayOrMinute = data_parameters_dict['dayOrMinute']
+        data_parameter_dict = self._data_parameter_obj._args
+        data_parameter_dict['dataType'] = dataType
+        dayOrMinute = data_parameter_dict['dayOrMinute']
+        minuteType_dict = data_parameter_dict['minuteType_dict']
         if dayOrMinute == 'alpha':
             raw_data_df = self.__read_mat_from_csv(dataType)
+            dataToSave_df = raw_data_df
             raw_data_mat = raw_data_df.as_matrix()
-            [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(raw_data_mat, data_parameters_dict)
-        elif dayOrMinute == 'day' or dayOrMinute == 'minute_simulative':
-            raw_data_df = tool.get_daily_data(data_parameters_dict)
-            simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, data_parameters_dict)
-            datafile_fullName, datafile_name = self._get_dataFileName()
-            if not os.path.exists(datafile_fullName):
-                simulativeCloseSeries_df.to_csv(datafile_fullName, encoding='utf-8')
+            [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(raw_data_mat, data_parameter_dict)
+        elif dayOrMinute == 'day' or dayOrMinute == minuteType_dict['minuteSimulative']:
+            raw_data_df = tool.get_daily_data(data_parameter_dict)
+            simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, data_parameter_dict)
+            dataToSave_df = simulativeCloseSeries_df
 
             simulative_sample_matrix = simulativeCloseSeries_df.as_matrix()
-            [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(simulative_sample_matrix, data_parameters_dict)
-        elif dayOrMinute == 'minute_no_simulative': # it has no simulative data
-            raw_data_df = tool.get_daily_data(data_parameters_dict)
-            # close = np.array(raw_data_df.close.tolist())
-            # open = np.array(raw_data_df.open.tolist())
-            # high = np.array(raw_data_df.high.tolist())
-            # low = np.array(raw_data_df.low.tolist())
-            # x_price_list = [open, high, low, close]
-            # x_price_list = []
+            [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(simulative_sample_matrix, data_parameter_dict)
+        elif dayOrMinute == minuteType_dict['minuteNoSimulative']: # it has no simulative data
+            raw_data_df = tool.get_daily_data(data_parameter_dict)
+            dataToSave_df = raw_data_df
+
             x_list, y_list = [], []
             filtered_close_list, close_list = [], []
-            x, y, filtered_close_for_use, close_for_use = get_x_y(raw_data_df, data_parameters_dict)
+            x, y, filtered_close_for_use, close_for_use = get_x_y(raw_data_df, data_parameter_dict)
             x_list.append(x)
             y_list.append(y)
             filtered_close_list.append(filtered_close_for_use)
             close_list.append(close_for_use)
+        ### save training data ########
+        datafile_fullName, datafile_name = self._get_dataFileName()
+        if not os.path.exists(datafile_fullName):
+            dataToSave_df.to_csv(datafile_fullName, encoding='utf-8')
 
         return x_list, y_list, filtered_close_list, close_list
-
-        # # each column in 'simulativeCloseSeries_df' is a simulative close series, which can be generated by different generator
-        # simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, data_parameters_dict)
-        # datafile_fullName, datafile_name = self._get_dataFileName()
-        # if not os.path.exists(datafile_fullName):
-        #     simulativeCloseSeries_df.to_csv(datafile_fullName, encoding='utf-8')
-        # simulative_sample_matrix = simulativeCloseSeries_df.as_matrix()
-        #
-        # closeSeries_num = simulative_sample_matrix.shape[1]
-        # x_list, y_list = [], []
-        # filtered_close_list, close_list = [], []
-        # for i in range(closeSeries_num):
-        #     close_array = simulative_sample_matrix[:, i]
-        #     close = pd.Series(close_array)
-        #     [x, y, filtered_close_for_use, close_for_use] = get_x_y(close, data_parameters_dict)
-        #     #x, y, filtered_close_for_use, close_for_use = result[0], result[1], result[2], result[3]
-        #     #if FourlabelType = 'SharpGentleUpDown',# label_type = 'BottomTopUpDown'
-        #     # if fourlabelType == 'SharpGentleUpDown':
-        #     #     x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(close, self._data_parameter_obj._args)
-        #     # elif fourlabelType == 'BottomTopUpDown':
-        #     #     x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(close, self._data_parameter_obj._args)
-        #     if show_label == True:
-        #         tool.show_fig(y, filtered_close_for_use, close_for_use)
-        #     x_list.append(x)
-        #     y_list.append(y)
-        #     filtered_close_list.append(filtered_close_for_use)
-        #     close_list.append(close_for_use)
-        # return x_list, y_list, filtered_close_list, close_list
 
 
     def _prepare_test_data(self):
@@ -210,14 +118,13 @@ class Your_Data(base.Data):
         extra_end = data_parameter_dict['extraTradeDays_afterEndTime']
         dayOrMinute = data_parameter_dict['dayOrMinute']
         time_field = data_parameter_dict['time_field']
+        minuteType_dict = data_parameter_dict['minuteType_dict']
         if dayOrMinute == 'day':
             df = tool.get_daily_data(data_parameter_dict)
-            #time_filed = 'date'
-            #close_array = np.array(df['close'].tolist())
             raw_data_df = pd.DataFrame(df['close'])
             df_time_field = df.loc[:, [time_field]]
             self._test_x_date = df_time_field[extra_front:-extra_end]
-        elif dayOrMinute in ['minute_no_simulative']: #[day, minute_no_simulative, minute_simulative, alpha]
+        elif dayOrMinute == minuteType_dict['minuteNoSimulative']:
             df = tool.get_daily_data(data_parameter_dict)
             raw_data_df = df # we need all field to calculate indicator
             df_time_field = df[time_field]
@@ -226,24 +133,13 @@ class Your_Data(base.Data):
             df = self.__read_mat_from_csv(dataType='test')
             self._test_x_date = np.array(df.iloc[extra_front:-extra_end,0].tolist()).astype(np.str)
             raw_data_df = pd.DataFrame(df.iloc[:,1])
-        elif dayOrMinute in ['minute_simulative']:
+        elif dayOrMinute == minuteType_dict['minuteSimulative']:
             df = tool.get_daily_data(data_parameter_dict)
             raw_data_df = pd.DataFrame(df['close'])
             df_time_field = df[time_field]
             self._test_x_date = df_time_field[extra_front:-extra_end]
         [self._test_x, self._test_y, self._test_filtered_close_for_use, self._test_close_for_use] = get_x_y(raw_data_df, data_parameter_dict)
         self._test_x = self._test_x.reshape(-1, self._test_x.shape[1], 1, 1)
-        #x, y, filtered_close_for_use, close_for_use = result[0], result[1], result[2], result[3]
-        # if fourlabelType == 'SharpGentleUpDown':
-        #     x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(close,
-        #                                                                             self._data_parameter_obj._args)
-        # elif fourlabelType == 'BottomTopUpDown':
-        #     x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(close,
-        #                                                                           self._data_parameter_obj._args)
-        #x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(close, self._data_parameter_obj._args)
-        # self._test_x, self._test_y = x, y
-        # self._test_filtered_close_for_use, self._test_close_for_use = filtered_close_for_use, close_for_use
-
 
     def _prepare_trainValid_data_separate(self):
         train_x_list, train_y_list, train_filtered_close_list, train_close_list = self._prepare_data(dataType = 'train')
@@ -264,33 +160,6 @@ class Your_Data(base.Data):
         self._train_x, self._train_y = balancedShuffled_train_x, balancedShuffled_train_y
         self._valid_x, self._valid_y = balancedShuffled_valid_x, balancedShuffled_valid_y
 
-    # def _prepare_trainValid_data_together(self):
-    #     self._data_parameter_obj._args['dataType'] = 'train_valid'
-    #     raw_data_df = tool.get_daily_data(self._data_parameter_obj._args)
-    #     # each column in 'simulativeCloseSeries_df' is a simulative close series, which can be generated by different generator
-    #     simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, self._data_parameter_obj._args)
-    #     datafile_fullName, datafile_name =  self._get_dataFileName()
-    #     if not os.path.exists(datafile_fullName):
-    #         simulativeCloseSeries_df.to_csv(datafile_fullName, encoding='utf-8')
-    #     raw_sample_mat = simulativeCloseSeries_df.as_matrix()
-    #     train_x_list, train_y_list, valid_x_list, valid_y_list = self.__split_train_valid(raw_sample_mat)
-    #     train_x_ndarray, train_x_label_ndarray = np.row_stack(train_x_list), np.hstack(train_y_list)
-    #     valid_x_ndarray, valid_x_label_ndarray = np.row_stack(valid_x_list), np.hstack(valid_y_list)
-    #
-    #     print 'train_x_ndarray', train_x_ndarray.shape
-    #     data_parameter_dict = self._data_parameter_obj._args
-    #     balancedShuffled_train_x, balancedShuffled_train_y = \
-    #         get_balanced_shuffled_datasets(train_x_ndarray, train_x_label_ndarray, data_parameter_dict)
-    #     print 'balancedShuffled_train_x.shape', balancedShuffled_train_x.shape
-    #     #balancedShuffled_valid_x, balancedShuffled_valid_y = \
-    #     #    get_balanced_shuffled_datasets(valid_x_ndarray, valid_x_label_ndarray, data_parameters_dict)
-    #     balancedShuffled_valid_x = valid_x_ndarray.reshape(-1, valid_x_ndarray.shape[1], 1, 1)
-    #     balancedShuffled_valid_y = valid_x_label_ndarray
-    #     #balancedShuffled_valid_x, balancedShuffled_valid_y = valid_x_ndarray, valid_x_label_ndarray
-    #     print 'balancedShuffled_valid_x.shape,', balancedShuffled_valid_x.shape
-    #     self._train_x, self._train_y = balancedShuffled_train_x, balancedShuffled_train_y
-    #     self._valid_x, self._valid_y = balancedShuffled_valid_x, balancedShuffled_valid_y
-
 class Your_Model(base.Model):
     '''
         write your own model
@@ -309,12 +178,6 @@ class Your_Model(base.Model):
         ### delete the variables that do not use in the next round
 #        self._clean()
         return evaluate_returns, test_returns
-    # def _get_modelInput_from_generalInput(self,x,y):
-    #
-    #     nb_classes = self._model_parameter_obj._args['nb_classes']
-    #     y_categorical = to_categorical(y, num_classes=nb_classes)
-    #     x_list, y_categorical_list = self.__from_x_to_xList(x, y_categorical)
-    #     return x_list, y_categorical_list
 
 
     def __get_modelFileName(self):
@@ -322,8 +185,9 @@ class Your_Model(base.Model):
         data_obj = self._data_obj
         data_parameter_dict = data_obj._data_parameter_obj._args
         data_parameter_dict['dataType'] = 'train'
+        data_parameter_dict['isModelName'] = True
         modelFile_name = tool.get_onlyFileName(data_parameter_dict)
-
+        del data_parameter_dict['isModelName']
         underlyingTime_directory = tool.get_underlyingTime_directory(data_parameter_dict)
         abslute_modelFile_directory = underlyingTime_directory + self._model_parameter_obj._args['modelFile_directoryName']
         tool.make_directory(abslute_modelFile_directory)
@@ -358,9 +222,9 @@ class Your_Model(base.Model):
         self._valid_x, self._valid_y =data_obj._valid_x, data_obj._valid_y
         self._modelFile_fullName, self._modelFile_name = self.__get_modelFileName()
 
-        parameter_dict = self._model_parameter_obj._args
+        model_parameter_dict = self._model_parameter_obj._args
         loss, acc, confusion_mat = im.train(self._train_x, self._train_y, self._valid_x, self._valid_y,
-                                            self._modelFile_fullName, parameter_dict)
+                                            self._modelFile_fullName, model_parameter_dict)
 
     def _evaluate(self):
         model_parameter_dict = self._model_parameter_obj._args
@@ -393,11 +257,5 @@ class Your_Model(base.Model):
         test_confuse_df = tool.confuse_matrix(y_true, y_predict, data_parameter_dict)
         return [test_confuse_df, y_true, y_predict, data_obj._test_filtered_close_for_use, data_obj._test_close_for_use, data_obj._test_x_date]
 
-
-    # def _clean(self):
-    #     data_obj = self._data_obj
-    #     parameter_dict = data_obj._data_parameter_obj._args
-    #     #data_parameters_dict.pop('currenttime_str') ## internal variable, only used during iteration
-    #     pass
 
 

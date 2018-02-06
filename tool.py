@@ -163,15 +163,6 @@ def currentTime_toString():
 
 def get_onlyFileName(data_parameter_dict):
     dataType = data_parameter_dict['dataType']
-    # if dataType == 'train_valid':
-    #     middle_str = data_parameter_dict['train_endTime']
-    # elif dataType == 'test':
-    #     middle_str = ''
-    # elif dataType == 'train' or dataType == 'valid':
-    #     middle_str = ''
-    # else:
-    #     raise Exception('illegal dataType:%s' % dataType)
-    #startTime, endTime, train_lookBack, valid_lookBack = get_start_end_lookback(data_parameter_dict)
     startTime, endTime = get_start_end(data_parameter_dict)
     code_wind = data_parameter_dict['code_wind']
     if not data_parameter_dict.has_key('currenttime_str'):
@@ -180,18 +171,26 @@ def get_onlyFileName(data_parameter_dict):
     timeStamp = data_parameter_dict['currenttime_str']
     dayOrMinute = data_parameter_dict['dayOrMinute']
     taskType = data_parameter_dict['taskType']
-    seq = [code_wind, dayOrMinute, taskType, startTime, endTime, timeStamp, dataType]
+    isModelName = data_parameter_dict['isModelName'] if data_parameter_dict.has_key('isModelName') else False
+    seq = [code_wind, dayOrMinute, taskType, startTime, endTime]
+    if isModelName == True:
+        indicator_combination = data_parameter_dict['indicator_combination']
+        seq.append(indicator_combination)
+    else:
+        seq.append(dataType)
+    seq.append(timeStamp)
     file_name = '_'.join(seq)
-    #file_name = code_wind + '_' + dayOrMinute + startTime  + '-' + endTime + '_' + timeStamp+'_'+dataType
     return file_name
 
 def get_underlyingTime_directory(parameter_dict):
     project_directory = parameter_dict['project_directory']
     code_wind = parameter_dict['code_wind']
     task_description = parameter_dict['task_description']
+    dayOrMinute = parameter_dict['dayOrMinute']
     if not parameter_dict.has_key('currenttime_str'):
         currenttime_str = currentTime_toString()
         parameter_dict['currenttime_str'] = currenttime_str
+
     seq = [code_wind, task_description, parameter_dict['currenttime_str']]
     underlyingTime_directory = project_directory+ '_'.join(seq) +'/'
 
@@ -212,21 +211,6 @@ def get_codeID_by_codeWind(parameter_dict,code_wind, type):
     df = pd.read_sql(sql, conn)
     code_id = df.ix[0,0]
     return code_id
-
-def get_xPriceList(df, parameter_dict):
-    dayOrMinute = parameter_dict['dayOrMinute']
-    if dayOrMinute == 'alpha':
-        x_price_list = []
-    else:
-        df = pd.DataFrame(df)
-        db_field = parameter_dict['db_field']
-        field_list = []
-        for v in db_field.split(','):
-            field_list.append(v.strip())
-        x_price_list = []
-        for v in field_list:
-            x_price_list.append(df.loc[:,v])
-    return x_price_list
 
 
 def get_start_end_lookback(parameter_dict):
@@ -305,12 +289,6 @@ def get_dataframe_between_start_end(startTime, endTime, parameter_dict):
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
     table, field = parameter_dict['db_table'], parameter_dict['db_field']
-    #dayOrMinute = parameter_dict['dayOrMinute']
-
-    # if dayOrMinute=='day':
-    #     time_field = 'date'
-    # elif dayOrMinute in ['minute_no_simulative','minute_simulative'] : # [day, minute_no_simulative, minute_simulative, alpha]
-    #     time_field = 'time'
     time_field = parameter_dict['time_field']
     sql = 'select %s ' % field + 'from %s ' % table + \
           'where code_id = %s  and %s>= %s and %s<%s ' % (code_id, time_field, startTime, time_field, endTime)
@@ -328,11 +306,6 @@ def get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_start
     code_id = get_codeID_by_codeWind(parameter_dict, code_wind, stock_type)
     conn = login_MySQL(parameter_dict)
     table, field = parameter_dict['db_table'], parameter_dict['db_field']
-    #dayOrMinute = parameter_dict['dayOrMinute']
-    # if dayOrMinute == 'day':
-    #     time_filed = 'date'
-    # elif dayOrMinute in ['minute_no_simulative','minute_simulative']:
-    #     time_filed = 'time'
     time_field = parameter_dict['time_field']
     sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and %s < %s ' % (code_id, time_field, startTime) \
           + 'order by %s desc limit %s ' % (time_field, NTradeDays_before_startTime)
@@ -350,11 +323,6 @@ def get_dataframe_NTradeDays_after_endTime(endTime, extraTradeDays_afterEndTime,
     table, field = parameter_dict['db_table'], parameter_dict['db_field']
 
     time_field = parameter_dict['time_field']
-    # if dayOrMinute == 'day':
-    #     time_filed = 'date'
-    # elif dayOrMinute in ['minute_no_simulative','minute_simulative']:
-    #     time_filed = 'time'
-    #dayOrMinute = parameter_dict['dayOrMinute']
     sql = 'select %s' % field + 'from %s ' % table + 'where code_id = %s and %s >= %s ' % (code_id, time_field, endTime) \
           + 'order by %s limit %s ' % (time_field, extraTradeDays_afterEndTime)
     df_data_ascendByDate = pd.read_sql(sql, conn)
@@ -389,8 +357,6 @@ def get_daily_data(parameter_dict):
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
 
     extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime']
-    # parameter_dict['extraTradeDays_afterEndTime'] = extraTradeDays_afterEndTime
-    #NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation + extraTradeDays_beforeStartTime_for_filter
     NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation
     df_front_extraTradeDays = get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_startTime, parameter_dict)
     df_between_start_end  =get_dataframe_between_start_end(startTime, endTime, parameter_dict)
@@ -427,8 +393,7 @@ def simulative_close_generator(raw_data_df, parameter_dict):
             random_location2 = random.randint(0, len(high_frequence) - i)
             simulativeNoiseSerise.append(high_frequence[i + random_location2])
         simulativeNoiseSerise_list.append(simulativeNoiseSerise)
-    # fake data generate
-    #fake_data_list = [list(close_price)]
+
     fake_data_list = []
     for i in range(simulativeCloseSeries_num):
         merge_filteredClose_noise = [filtered_close + noise for filtered_close, noise in zip(close_filtered, simulativeNoiseSerise_list[i] )]
@@ -442,17 +407,30 @@ def simulative_close_generator(raw_data_df, parameter_dict):
     fake_data_df = DataFrame(fake_data, index=index_date, columns=index_columns)
     return fake_data_df
 
-def currentDay_forward_delta(currentTime, deltaTime):
-
-    curr = datetime.datetime.strptime(currentTime, '%Y%m%d')
-    delta = datetime.timedelta(deltaTime)
-    cutTime = (curr + delta).strftime('%Y%m%d')
+def currentTime_forward_delta(currentTime, deltaTime, parameter_dict):
+    dayOrMinute = parameter_dict['dayOrMinute']
+    if dayOrMinute in ['day', 'alpha']: #
+        time_format = '%Y%m%d'
+        curr = datetime.datetime.strptime(currentTime, time_format)
+        delta = datetime.timedelta(deltaTime)
+        cutTime = (curr + delta).strftime(time_format)
+    elif dayOrMinute in parameter_dict['minuteType_dict']:
+        df_end_extraTradeDays = get_dataframe_NTradeDays_after_endTime(currentTime, deltaTime, parameter_dict)
+        time_field = parameter_dict['time_field']
+        cutTime = str(np.array(df_end_extraTradeDays[time_field])[-1])
     return cutTime
 
-def currentDay_backward_delta(currentTime, deltaTime):
-    curr = datetime.datetime.strptime(currentTime, '%Y%m%d')
-    delta = datetime.timedelta(deltaTime)
-    cutTime = (curr + (-1)* delta).strftime('%Y%m%d')
+def currentDay_backward_delta(currentTime, deltaTime, parameter_dict):
+    dayOrMinute = parameter_dict['dayOrMinute']
+    if dayOrMinute in ['day', 'alpha']: #
+        time_format = '%Y%m%d'
+        curr = datetime.datetime.strptime(currentTime, time_format)
+        delta = datetime.timedelta(deltaTime)
+        cutTime = (curr +(-1)*delta).strftime(time_format)
+    elif dayOrMinute in parameter_dict['minuteType_dict']:
+        df_end_extraTradeDays = get_dataframe_NTradeDays_before_startTime(currentTime, deltaTime, parameter_dict)
+        time_field = parameter_dict['time_field']
+        cutTime = str(np.array(df_end_extraTradeDays[time_field])[0])
     return cutTime
 
 if __name__ == '__main__':
@@ -463,12 +441,7 @@ if __name__ == '__main__':
     # print result
     #print currentTime_toString()
     pass
-    #plt.figure(1)
-    # str = 'time, open, high, low, close, pct_chg, volume, amt '
-    # fields = []
-    # for v in str.split(','):
-    #     fields.append(v.strip())
-    # print(fields)
-    lista = ['a','b']
-    a = 'c'
-    print a in lista
+    currentTime = '201308010930'
+    deltaTime = 1
+    cutTime = currentTime_forward_delta(currentTime, deltaTime)
+    print cutTime

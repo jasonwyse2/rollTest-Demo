@@ -6,24 +6,19 @@ import datetime
 import scipy.signal as signal
 import data.datalib.util.get_3d_data_set as get3d
 from data.ProbabilityIndicator import get_probability_indicator
-indicator_comb_list = ['day_comb_return_1', 'comb_return_2', 'minute_comb_return_1']
-day_field = 'date, open, high, low, close, pct_chg, volume, amt '
-minute_table = 'index_min'
-minute_field = 'time, open, high, low, close, pct_chg, volume, amt '
-
+day_comb_list = ['dayComb1', 'dayComb2','dayComb3']
+minute_comb_list = ['minuteComb1']
 def get_indicator_handle(indicatorCombinationName):
-    if indicatorCombinationName=='day_comb_return_1':
+    if indicatorCombinationName=='dayComb1':
         return get_indicator_day_comb1
-        #mat = get_indicator_comb1()
-    elif indicatorCombinationName=='comb_return_2':
+    elif indicatorCombinationName=='dayComb2':
         return get_indicator_comb2
-    elif indicatorCombinationName=='comb_return_3':
-        return get_indicator_comb3
-    elif indicatorCombinationName=='minute_comb_return_1':
-        return get_indicator_minute_com1
+    elif indicatorCombinationName=='minuteComb1':
+        return get_indicator_minute_comb1
 
-def get_indicator_day_comb1(raw_data_df):
-
+def get_indicator_day_comb1(raw_data_df,indicator_combination=''):
+    # if indicator_combination not in day_comb_list:
+    #     raise Exception('"indicator_combination" does not match the variable "dayOrMinute"')
     close = np.array(raw_data_df.iloc[:,0])
     close_pct = np.diff(close) / close[:-1]
     indicator_list = []
@@ -50,7 +45,7 @@ def get_indicator_day_comb1(raw_data_df):
     for v in indicator_list:
         mat = np.column_stack((mat, v))
     return mat
-def get_indicator_comb2(raw_data_df):
+def get_indicator_comb2(raw_data_df,indicator_combination):
     open, high, low, close = raw_data_df[0], raw_data_df[1], raw_data_df[2], raw_data_df[3]
     close_pct = np.diff(close) / close[:-1]
 
@@ -78,33 +73,10 @@ def get_indicator_comb2(raw_data_df):
         mat = np.column_stack((mat, v))
     return mat
 
-def get_indicator_comb3(close_return):
-    indicator_list = []
-    BBANDS_parameter_list = [(26,3,3),(13,2,2),(5,2,2)]
-    for i in range(len(BBANDS_parameter_list)):
-        upper_middle_lower = talib.BBANDS(close_return, timeperiod=BBANDS_parameter_list[i][0], nbdevup=BBANDS_parameter_list[i][1],
-                                          nbdevdn=BBANDS_parameter_list[i][2], matype=0)
-        for v in upper_middle_lower:
-            indicator_list.append(v)
-    WMA = talib.MA(close_return, 30, matype=2)
-    indicator_list.append(WMA)
-    TEMA = talib.MA(close_return, 30, matype=4)
-    indicator_list.append(TEMA)
-    rsi = talib.RSI(close_return, timeperiod=6)
-    indicator_list.append(rsi)
-    macd_macdsignal_macdhist = talib.MACD(close_return, fastperiod=12, slowperiod=26, signalperiod=9)
-    for v in macd_macdsignal_macdhist:
-        indicator_list.append(v)
-    elas_p = get_probability_indicator(close_return, lmd_1=0.475, lmd_2=0.4)
-    for v in elas_p:
-        indicator_list.append(v)
-    mat = close_return
-    for v in indicator_list:
-        mat = np.column_stack((mat, v))
-    return mat
-
-def get_indicator_minute_com1(raw_data_df):
+def get_indicator_minute_comb1(raw_data_df,indicator_combination=''):
     '''get all factors when n minutes as the period'''
+    # if indicator_combination not in minute_comb_list:
+    #     raise Exception('"indicator_combination" does not match the variable "dayOrMinute"')
     open, high = np.array(raw_data_df['open']), np.array(raw_data_df['high'])
     low, close = np.array(raw_data_df['low']), np.array(raw_data_df['close'])
 
