@@ -29,17 +29,18 @@ if __name__ == '__main__':
          'indicator_combination': 'dayComb1',  # ['dayComb1, minuteComb1']
          'alpha_csv_path': '/mnt/aidata/生成数据/Alpha扰动300/index_240_test.csv',
          'taskType':'BottomTopUpDown',  #[BottomTopUpDown, SharpGentleUpDown]
+        'show_label':False,
 
-         'simulativeCloseSeries_num': 2,
-         'train_num': 20,
+         'simulativeCloseSeries_num': 100,
+         'train_num': 10,
 
         'project_directory':'/mnt/aidata/QuantitativePlatform/a-yaogong/',
 
         'day_train_startTime':'20060101','day_train_endTime': '20160101',
         'day_valid_startTime': '', 'day_valid_endTime': '20170101',
          'day_test_startTime': '', 'day_test_endTime':'20170101',
-         'day_roll_forward': 365,  # one year contains 365 trade days
-         'day_rollTest_num': 2,
+         'day_roll_forward': 30,  # one year contains 365 trade days
+         'day_rollTest_num': 1,
          'dalily_change_threshold':0.015,
 
          'minute_train_startTime':'201308010930', 'minute_train_endTime': '201601010930',
@@ -49,7 +50,6 @@ if __name__ == '__main__':
          'minute_rollTest_num': 2,
          'minute_change_threshold': 0.001,
          }
-
 
     db_information = hyper_parameter_dict['db_information']
     data_parameter_obj = Parameters(
@@ -63,6 +63,8 @@ if __name__ == '__main__':
         alpha_csv_path = hyper_parameter_dict['alpha_csv_path'],
         taskType = hyper_parameter_dict['taskType'],
         indicator_combination = hyper_parameter_dict['indicator_combination'],
+        show_label = hyper_parameter_dict['show_label'],
+        simulativeCloseSeries_num=hyper_parameter_dict['simulativeCloseSeries_num'],
 
         NTradeDays_for_indicatorCalculation=120,
         filter_windowSize=5, kaiser_beta=2, addNoise_windowSize=5,
@@ -72,9 +74,8 @@ if __name__ == '__main__':
         dataFile_postfix='.csv',
         task_description='', # it's been set in config_other_parameter(), parameter_config.py
 
-        show_label=False,
-        simulativeCloseSeries_num = hyper_parameter_dict['simulativeCloseSeries_num'],
-        #roll_forward = hyper_parameter_dict['roll_forward'],
+
+
     )
     config.set_additional_parameters(hyper_parameter_dict, data_parameter_obj._args)
     data_parameter_dict = data_parameter_obj._args

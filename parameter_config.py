@@ -73,7 +73,7 @@ def config_taskType_parameter(hyper_parameter_dict,data_parameters_dict):
         data_parameters_dict['color_SharpGentleUpDown'] = ['red', 'green', 'violet', 'lightgreen']
 
     elif taskType == 'BottomTopUpDown':
-        data_parameters_dict['kneeNum_at_bottomTop'] = 2
+        data_parameters_dict['kneeNum_at_bottomTop'] = 3
         data_parameters_dict['filterTimes_for_upDown'] = 1
         data_parameters_dict['label_BottomTopUpDown'] = ['bottom', 'up', 'top', 'down']
         data_parameters_dict['color_BottomTopUpDown'] = ['green', 'violet', 'red', 'lightgreen']

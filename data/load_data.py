@@ -9,131 +9,6 @@ slope_type = {'sharp':5,'gentle':4}
 trend_type = {'up': 1, 'down': 0}
 day_field='date, open, high, low, close, pct_chg, volume, amt '
 minute_field='time, open, high, low, close, pct_chg, volume, amt '
-# def get_indicators_close(close_price):
-#     """ """
-#     upper, middle, lower = talib.BBANDS(close_price,
-#                                         timeperiod=13,
-#                                         # number of non-biased standard deviations from the mean
-#                                         nbdevup=2,
-#                                         nbdevdn=2,
-#                                         # Moving average dataType: simple moving average here
-#                                         matype=0)
-#
-#     WMA = talib.MA(close_price, 30, matype=2)
-#     TEMA = talib.MA(close_price, 30, matype=4)
-#
-#     rsi = talib.RSI(close_price, timeperiod=6)
-#
-#     macd, macdsignal, macdhist = talib.MACD(close_price, fastperiod=12, slowperiod=26, signalperiod=9)
-#     elas, p = get_probability_indicator(close_price, lmd_1=0.475, lmd_2=0.4)
-#
-#     # close_price = np.diff(close_price) / close_price[:-1]
-#     # upper = np.diff(upper) / upper[:-1]
-#     # middle = np.diff(middle) / middle[:-1]
-#     # WMA = np.diff(WMA) / WMA[:-1]
-#     # TEMA = np.diff(TEMA) / TEMA[:-1]
-#     # rsi = np.diff(rsi) / rsi[:-1]
-#     # macd = np.diff(macd) / macd[:-1]
-#     # macdsignal = np.diff(macdsignal) / macdsignal[:-1]
-#     # macdhist = np.diff(macdhist) / macdhist[:-1]
-#     # p = np.diff(p) / p[:-1]
-#     # elas = np.diff(elas) / elas[:-1]
-#
-#     mat = close_price
-#     # mat = np.column_stack((mat,upper))
-#     # #mat = upper
-#     # mat = np.column_stack((mat,middle))
-#     # mat = np.column_stack((mat,lower))
-#
-#     mat = np.column_stack((mat,WMA))
-#     mat = np.column_stack((mat,TEMA))
-#     mat = np.column_stack((mat,rsi))
-#     #mat = macd
-#     mat = np.column_stack((mat,macd))
-#     mat = np.column_stack((mat,macdsignal))
-#     mat = np.column_stack((mat,macdhist))
-#     mat = np.column_stack((mat, p))
-#     mat = np.column_stack((mat, elas))
-#
-#     return mat
-
-# def get_indicators_return(close_pct):
-#     """ """
-#     upper, middle, lower = talib.BBANDS(close_pct,
-#                                         timeperiod=26,
-#                                         # number of non-biased standard deviations from the mean
-#                                         nbdevup=3,
-#                                         nbdevdn=3,
-#                                         # Moving average dataType: simple moving average here
-#                                         matype=0)
-#     upper1, middle1, lower1 = talib.BBANDS(close_pct,
-#                                            timeperiod=13,
-#                                            # number of non-biased standard deviations from the mean
-#                                            nbdevup=3,
-#                                            nbdevdn=3,
-#                                            # Moving average dataType: simple moving average here
-#                                            matype=0)
-#     upper2, middle2, lower2 = talib.BBANDS(close_pct,
-#                                            timeperiod=5,
-#                                            # number of non-biased standard deviations from the mean
-#                                            nbdevup=2,
-#                                            nbdevdn=2,
-#                                            # Moving average dataType: simple moving average here
-#                                            matype=0)
-#
-#
-#     WMA = talib.MA(close_pct, 30, matype=2)
-#     TEMA = talib.MA(close_pct, 30, matype=4)
-#
-#     rsi = talib.RSI(close_pct, timeperiod=6)
-#
-#     macd, macdsignal, macdhist = talib.MACD(close_pct, fastperiod=12, slowperiod=26, signalperiod=9)
-#     elas, p = get_probability_indicator(close_pct, lmd_1=0.475, lmd_2=0.4)
-#
-#     mat = close_pct
-#     mat = np.column_stack((mat, upper))
-#     mat = np.column_stack((mat, middle))
-#     mat = np.column_stack((mat, lower))
-#
-#     mat = np.column_stack((mat, upper1))
-#     mat = np.column_stack((mat, middle1))
-#     mat = np.column_stack((mat, lower1))
-#
-#     mat = np.column_stack((mat, upper2))
-#     mat = np.column_stack((mat, middle2))
-#     mat = np.column_stack((mat, lower2))
-#
-#     mat = np.column_stack((mat, WMA))
-#     mat = np.column_stack((mat, TEMA))
-#     mat = np.column_stack((mat, rsi))
-#     mat = np.column_stack((mat, macd))
-#     mat = np.column_stack((mat, macdsignal))
-#     mat = np.column_stack((mat, macdhist))
-#     mat = np.column_stack((mat, p))
-#     mat = np.column_stack((mat, elas))
-#
-#     return mat
-
-# def get_indicators(close_price,close_pct):
-#     #mat1 = get_indicators_close(close_price)
-#     mat2 = get_indicators_return(close_pct)
-#     #mat = np.column_stack((mat1, mat2))
-#     mat = mat2
-#     return mat
-
-# def get_legal_input(indicators,statistics_len):
-#     """ """
-#     nan_num = max(np.where(np.isnan(indicators))[0])
-#     #print 'nan_num',nan_num
-#     #print 'indicator',indicators.shape
-#     cut_number = int(max(nan_num,statistics_len))
-#    # print 'cut_number',cut_number
-#     legal_input = indicators[cut_number:,:] # the last day has no label, because label comes from the next day.
-#
-#     return legal_input,cut_number
-    
-#参数close：收盘价，windom_size：滤波窗长度，window_beta:滤波器参数， n:滤波次数
-
 
 def data_filter_nTimes(close, window_size, window_beta, filterTimes):
     def data_oneTime_filter(close, window_size, window_beta):
@@ -151,7 +26,7 @@ def data_filter_nTimes(close, window_size, window_beta, filterTimes):
         extraTradeDays_afterEndTime = int(window_size / 2) -1
     else:
         extraTradeDays_afterEndTime = int(window_size / 2)
-    #data_afterNTimesFilter_list = [close.values]
+
     tmp_close = close
     top_half_window = list(tmp_close)[:extraTradeDays_beforeStartTime]
     end_half_window = list(tmp_close)[-extraTradeDays_afterEndTime:]
@@ -159,7 +34,7 @@ def data_filter_nTimes(close, window_size, window_beta, filterTimes):
         middle = list(data_oneTime_filter(tmp_close, window_size, window_beta))
         close_filtered_top_end = top_half_window + middle + end_half_window
         tmp_close = close_filtered_top_end
-    #输出为n次滤波后的结果
+
     data_afterNTimesFilter = tmp_close
     return  np.array(data_afterNTimesFilter)
 
@@ -169,9 +44,7 @@ def tag_upDown(data_afterFilterNTimes):
     zeroDayForward_list = data_afterFilterNTimes[:-1]
 
     diff_list = [oneDay-zeroDay for oneDay, zeroDay in zip(oneDayForward_list,zeroDayForward_list)]
-
     tag_for_upDown = []
-
     for i in range(len(diff_list)):
         if i == 0:
             if diff_list[i] > 0:
@@ -361,7 +234,7 @@ def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
 
     knee_close = filtered_data[knee_idx]
     change_threshold = parameter_dict['change_threshold']
-    break_t, break_p = get3d.break_point(change_threshold, knee_idx, knee_close)
+    break_t, break_p = break_point(change_threshold, knee_idx, knee_close)
     if not break_t[-1] == knee_idx[-1]:
         break_t.append(knee_idx[-1])
         break_p.append(knee_close[-1])
@@ -372,7 +245,6 @@ def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
     label_type = {'bottom':0, 'up':1,'top':2, 'down':3}
     if filtered_data[break_idx[1]] - filtered_data[break_idx[0]] > 0:
         for i in range(len(break_idx)-1):
-
                 if i%2==0:
                     labels[break_idx[i]:break_idx[i]+kneeNum_at_bottomTop] = label_type['bottom']
                     labels[break_idx[i]+kneeNum_at_bottomTop:break_idx[i+1]-kneeNum_at_bottomTop] = label_type['up']
@@ -393,6 +265,103 @@ def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
                 labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]] = label_type['top']
 
     return labels
+
+def get_4labels_bottomTopUpDown_backup(filtered_data, parameter_dict):
+    knee_idx = [0]
+    filtered_data = np.array(filtered_data)
+    data_len = filtered_data.shape[0]
+    for i in range(1,data_len):
+        if i == data_len-1:
+            knee_idx.append(i)
+        else:
+            if (filtered_data[i+1]-filtered_data[i])*(filtered_data[i]-filtered_data[i-1])<0:
+                knee_idx.append(i)
+            else:
+                pass
+
+    knee_close = filtered_data[knee_idx]
+    change_threshold = parameter_dict['change_threshold']
+    break_t, break_p = break_point(change_threshold, knee_idx, knee_close)
+    if not break_t[-1] == knee_idx[-1]:
+        break_t.append(knee_idx[-1])
+        break_p.append(knee_close[-1])
+
+    break_idx = np.array(break_t)
+    kneeNum_at_bottomTop = parameter_dict['kneeNum_at_bottomTop']
+    labels = np.zeros(data_len)
+    label_type = {'bottom':0, 'up':1,'top':2, 'down':3}
+    if filtered_data[break_idx[1]] - filtered_data[break_idx[0]] > 0:
+        for i in range(len(break_idx)-1):
+                if i%2==0:
+                    labels[break_idx[i]:break_idx[i]+kneeNum_at_bottomTop] = label_type['bottom']
+                    labels[break_idx[i]+kneeNum_at_bottomTop:break_idx[i+1]-kneeNum_at_bottomTop] = label_type['up']
+                    labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]]= label_type['top']
+                else:
+                    labels[break_idx[i]:break_idx[i] + kneeNum_at_bottomTop] = label_type['top']
+                    labels[break_idx[i] + kneeNum_at_bottomTop:break_idx[i + 1] - kneeNum_at_bottomTop] = label_type['down']
+                    labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]]=label_type['bottom']
+    else:#filtered_data[break_idx[1]] - filtered_data[break_idx[0]] < 0:
+        for i in range(len(break_idx) - 1):
+            if i % 2 == 0:
+                labels[break_idx[i]:break_idx[i] + kneeNum_at_bottomTop] = label_type['top']
+                labels[break_idx[i] + kneeNum_at_bottomTop:break_idx[i + 1] - kneeNum_at_bottomTop] = label_type['down']
+                labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]] = label_type['bottom']
+            else:
+                labels[break_idx[i]:break_idx[i] + kneeNum_at_bottomTop] = label_type['bottom']
+                labels[break_idx[i] + kneeNum_at_bottomTop:break_idx[i + 1] - kneeNum_at_bottomTop] = label_type['up']
+                labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]] = label_type['top']
+
+    return labels
+def break_point(change_percent, knee_idx_list, knee_close_list):
+    break_close = [knee_close_list[0]]
+    break_close_index = [knee_idx_list[0]]
+    i = 1
+    tmp = -1
+    trend_type = {'up_trend':1,'down_trend':-1}
+    while i < len(knee_close_list[:-1]):
+        # print i
+
+        if i - tmp == 0:
+            break
+        tmp = i
+        if knee_close_list[i] - break_close[-1] > 0:
+            flag = trend_type['up_trend']
+            tmp_high = knee_close_list[i]
+            tmp_high_index = knee_idx_list[i]
+        else:
+            flag = trend_type['down_trend']
+            tmp_low = knee_close_list[i]
+            tmp_low_index = knee_idx_list[i]
+
+        if flag == trend_type['up_trend']:
+            for j, v in enumerate(knee_close_list[i + 1:]):
+                if (v - tmp_high) / tmp_high < -change_percent:
+                    break_close.append(tmp_high)
+                    break_close_index.append(tmp_high_index)
+                    i += j + 1
+                    break
+                else:
+                    if v > tmp_high:
+                        tmp_high = v
+                        tmp_high_index = knee_idx_list[i + j + 1]
+
+                    else:
+                        continue
+        else:#flag == trend_type['down_trend']
+            for j, v in enumerate(knee_close_list[i + 1:]):
+                if (v - tmp_low) / tmp_low > change_percent:
+                    break_close.append(tmp_low)
+                    break_close_index.append(tmp_low_index)
+                    i += j + 1
+                    break
+                else:
+                    if v < tmp_low:
+                        tmp_low = v
+                        tmp_low_index = knee_idx_list[i + j + 1]
+
+                    else:
+                        continue
+    return break_close_index, break_close
 
 def get_2labels_upDown(filtered_data, parameter_dict):
     knee_idx = [0]
@@ -450,6 +419,7 @@ def get_x_y_bottomTopUpDown(raw_data_df, parameter_dict):#BottomTopUpDown
         close = np.array(raw_data_df['close'])
     else:
         close = np.array(raw_data_df.iloc[:,0])
+
     raw_y, filtered_data = get_tag_bottomTopUpDown(close, parameter_dict)
     raw_y = np.array(raw_y)
 

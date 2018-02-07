@@ -256,6 +256,3 @@ class Your_Model(base.Model):
         data_parameter_dict['dataType'] = 'test'
         test_confuse_df = tool.confuse_matrix(y_true, y_predict, data_parameter_dict)
         return [test_confuse_df, y_true, y_predict, data_obj._test_filtered_close_for_use, data_obj._test_close_for_use, data_obj._test_x_date]
-
-
-

@@ -32,6 +32,7 @@ def get_net_yield(save_result_dict, directory, underlying, interval=10):
 
 
     test_close_return = np.diff(test_close_all) / test_close_all[:-1]
+    test_close_baseline_return = test_close_all[1:] / test_close_all[0]
 
     test_close_return_product = position_signal * test_close_return
     test_close_return_product_pulsOne = test_close_return_product + 1
@@ -43,10 +44,13 @@ def get_net_yield(save_result_dict, directory, underlying, interval=10):
 
     fig_path = directory + 'net_profit.pdf'
     with PdfPages(fig_path) as pdf:
-        y = cum_prod_list
         plt.figure(figsize=(30, 15))
-        plt.title('%s Net yield (Time:%s-%s)'%(underlying, test_date_all[0],test_date_all[-1]), fontsize=20)
-        plt.plot(np.array(y))
+        plt.title('%s Net yield (Time:%s-%s)' % (underlying, test_date_all[0], test_date_all[-1]), fontsize=20)
+
+        y = cum_prod_list
+        plt.plot(np.array(y), label='yours')
+        y = np.array([1]+test_close_baseline_return.tolist())
+        plt.plot(np.array(y), label='baseline')
         interval_idx_list = []
         interval_date_list = []
         for i in range(len(test_close_all)):
@@ -57,5 +61,6 @@ def get_net_yield(save_result_dict, directory, underlying, interval=10):
         plt.xticks(tuple(interval_idx_list), tuple(interval_date_list))
         plt.xticks(rotation=80, fontsize=15)
         plt.grid()
+        plt.legend(fontsize=25)
         pdf.savefig()
         plt.close()

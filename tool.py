@@ -13,15 +13,14 @@ import time
 from matplotlib import rcParams
 from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
-import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 
-myfont = FontProperties(fname='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', size=20)
-rcParams['font.sans-serif'] = ['SimHei']
+#myfont = FontProperties(fname='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', size=20)
+#rcParams['font.sans-serif'] = ['SimHei']
 rcParams['axes.unicode_minus'] = False  # 解决负号'-'显示为方块的问题
 
 def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig_path, code_wind,
-                                label, color, interval=5):
+                                label, color, interval=10):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 80
@@ -59,7 +58,7 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
         plt.close()
 
 def save_figure_pdf(filtered_close, close, date, y, fig_path,
-                    label, color, interval=5):
+                    label, color, interval=10):
 
     filtered_close, close, date = np.array(filtered_close), np.array(close), np.array(date)
     point_size = 30
@@ -212,7 +211,6 @@ def get_codeID_by_codeWind(parameter_dict,code_wind, type):
     code_id = df.ix[0,0]
     return code_id
 
-
 def get_start_end_lookback(parameter_dict):
     train_lookBack = 0
     valid_lookBack = 0
@@ -339,23 +337,8 @@ def get_daily_data(parameter_dict):
     :param parameter_dict:
     :return:
     '''
-    dataType = parameter_dict['dataType']
-    startTime, endTime, train_lookBack,valid_lookBack  = get_start_end_lookback(parameter_dict)
-
-    if dataType=='train_valid':
-        parameter_dict['valid_lookBack_from_endTime'] = valid_lookBack
-        parameter_dict['train_lookBack_from_endTime'] = train_lookBack
-    elif dataType=='valid': #### dataType=='test'
-        parameter_dict['valid_lookBack_from_endTime'] = valid_lookBack
-    elif dataType=='test':
-        parameter_dict['test_lookBack_from_endTime'] = valid_lookBack
-    elif dataType=='train':
-        parameter_dict['train_lookBack_from_endTime'] = train_lookBack
-    else:
-        raise Exception('illegal dataType:%s, not support now'%dataType)
-
+    startTime, endTime = get_start_end(parameter_dict)
     NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
-
     extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime']
     NTradeDays_before_startTime = NTradeDays_for_indicatorCalculation
     df_front_extraTradeDays = get_dataframe_NTradeDays_before_startTime(startTime, NTradeDays_before_startTime, parameter_dict)
