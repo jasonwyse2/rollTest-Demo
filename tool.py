@@ -9,7 +9,8 @@ from numpy import random
 from pandas import DataFrame
 import datetime
 import time
-
+import datetime
+from dateutil.relativedelta import relativedelta
 from matplotlib import rcParams
 from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
@@ -97,7 +98,7 @@ def show_fig(labels,filter_data_for_use,close_for_use,label = ['sharp up','sharp
     plt.scatter(np.where(labels == 1)[0], close_for_use[np.where(labels == 1)[0]], marker='o',c='green',label=label[1],s=point_size)
     plt.scatter(np.where(labels == 2)[0], close_for_use[np.where(labels == 2)[0]], marker='o', c='violet', label=label[2], s=point_size)
     plt.scatter(np.where(labels == 3)[0], close_for_use[np.where(labels == 3)[0]], marker='o', c='lightgreen', label=label[3], s=point_size)
-    plt.legend(prop=myfont)
+    plt.legend()
     plt.show()
 
 def confuse_matrix(y_true, y_predict, parameter_dict):
@@ -366,10 +367,12 @@ def simulative_close_generator(raw_data_df, parameter_dict):
     while count < simulativeCloseSeries_num:
         count += 1
         simulativeNoiseSerise = []
-        #random.seed(10)
-        random_location = random.randint(0, addNoise_windowSize)
+        #seed = int(time.clock())
+        random.seed()
+        #random_location = random.randint(0, addNoise_windowSize)
         high_frequence = list(high_frequence)
         for i in range(len(high_frequence) - (addNoise_windowSize-1)):
+            random_location = random.randint(0, addNoise_windowSize)
             simulativeNoiseSerise.append(high_frequence[i + random_location])
 
         for i in range(len(high_frequence) - (addNoise_windowSize-1), len(high_frequence)):
@@ -395,8 +398,12 @@ def currentTime_forward_delta(currentTime, deltaTime, parameter_dict):
     if dayOrMinute in ['day', 'alpha']: #
         time_format = '%Y%m%d'
         curr = datetime.datetime.strptime(currentTime, time_format)
-        delta = datetime.timedelta(deltaTime)
-        cutTime = (curr + delta).strftime(time_format)
+
+        forward = (curr + relativedelta(months=+deltaTime))
+        cutTime = forward.strftime(time_format)
+
+        # delta = datetime.timedelta(deltaTime)
+        # cutTime = (curr + delta).strftime(time_format)
     elif dayOrMinute in parameter_dict['minuteType_dict']:
         df_end_extraTradeDays = get_dataframe_NTradeDays_after_endTime(currentTime, deltaTime, parameter_dict)
         time_field = parameter_dict['time_field']
@@ -424,7 +431,8 @@ if __name__ == '__main__':
     # print result
     #print currentTime_toString()
     pass
-    currentTime = '201308010930'
-    deltaTime = 1
-    cutTime = currentTime_forward_delta(currentTime, deltaTime)
-    print cutTime
+
+
+    cur = datetime.date.today()
+    print cur
+    print (cur-relativedelta(months=+1))

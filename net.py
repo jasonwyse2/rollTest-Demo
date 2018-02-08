@@ -47,10 +47,12 @@ def get_net_yield(save_result_dict, directory, underlying, interval=10):
         plt.figure(figsize=(30, 15))
         plt.title('%s Net yield (Time:%s-%s)' % (underlying, test_date_all[0], test_date_all[-1]), fontsize=20)
 
-        y = cum_prod_list
-        plt.plot(np.array(y), label='yours')
+        y = np.array(cum_prod_list)
+        plt.plot(y, label='yours')
+        plt.scatter(np.arange(0,y.shape[0]), y, marker='o')
         y = np.array([1]+test_close_baseline_return.tolist())
-        plt.plot(np.array(y), label='baseline')
+        plt.plot(y, label='baseline')
+        plt.scatter(np.arange(0,y.shape[0]), y, marker='D')
         interval_idx_list = []
         interval_date_list = []
         for i in range(len(test_close_all)):
@@ -64,3 +66,8 @@ def get_net_yield(save_result_dict, directory, underlying, interval=10):
         plt.legend(fontsize=25)
         pdf.savefig()
         plt.close()
+
+if __name__ == '__main__':
+    y = range(10)
+    y_array = np.where(y==y)
+    plt.scatter(np.arrange(0, len(y)), np.array(y), marker='o')

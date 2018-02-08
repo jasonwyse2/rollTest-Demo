@@ -77,6 +77,7 @@ def get_x_y_repeat(raw_data_mat, data_parameters_dict):
     filtered_close_list, close_list = [], []
     for i in range(closeSeries_num):
         close_array = raw_data_mat[:, i]
+        close_array = close_array[close_array>0]
         #close = pd.Series(close_array)
         raw_data_df = pd.DataFrame(close_array)
         #x_price_list = tool.get_xPriceList(raw_data_mat, data_parameters_dict)
@@ -234,7 +235,7 @@ def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
 
     knee_close = filtered_data[knee_idx]
     change_threshold = parameter_dict['change_threshold']
-    break_t, break_p = break_point(change_threshold, knee_idx, knee_close)
+    break_t, break_p = get3d.break_point(change_threshold, knee_idx, knee_close)
     if not break_t[-1] == knee_idx[-1]:
         break_t.append(knee_idx[-1])
         break_p.append(knee_close[-1])
@@ -243,26 +244,192 @@ def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
     kneeNum_at_bottomTop = parameter_dict['kneeNum_at_bottomTop']
     labels = np.zeros(data_len)
     label_type = {'bottom':0, 'up':1,'top':2, 'down':3}
+    pct_threshold = 0.003
+    init_tupe = 1,1,0,1
+
     if filtered_data[break_idx[1]] - filtered_data[break_idx[0]] > 0:
         for i in range(len(break_idx)-1):
+
                 if i%2==0:
-                    labels[break_idx[i]:break_idx[i]+kneeNum_at_bottomTop] = label_type['bottom']
-                    labels[break_idx[i]+kneeNum_at_bottomTop:break_idx[i+1]-kneeNum_at_bottomTop] = label_type['up']
-                    labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]]= label_type['top']
+                    right_bottum,right_top,left_bottum,left_top = init_tupe
+                    for j in range(1,kneeNum_at_bottomTop):
+                        if (filtered_data[break_idx[i] + j] - filtered_data[break_idx[i]]) /filtered_data[break_idx[i]] < pct_threshold:
+                            right_bottum += 1
+                        else:
+                            break
+
+                    for j in range(1, kneeNum_at_bottomTop):
+                        if (filtered_data[break_idx[i+1]] - filtered_data[break_idx[i+1]-j]) /filtered_data[break_idx[i+1]-j] < pct_threshold:
+                            left_top = +1
+                        else:
+                            break
+
+                    labels[break_idx[i]:break_idx[i]+right_bottum] = label_type['bottom']
+                    labels[break_idx[i]+right_bottum:break_idx[i+1]-left_top] = label_type['up']
+                    labels[break_idx[i+1]-left_top:break_idx[i+1]]= label_type['top']
                 else:
-                    labels[break_idx[i]:break_idx[i] + kneeNum_at_bottomTop] = label_type['top']
-                    labels[break_idx[i] + kneeNum_at_bottomTop:break_idx[i + 1] - kneeNum_at_bottomTop] = label_type['down']
-                    labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]]=label_type['bottom']
+                    right_bottum, right_top, left_bottum, left_top = init_tupe
+                    for j in range(1, kneeNum_at_bottomTop):
+                        if abs((filtered_data[break_idx[i]+j] - filtered_data[break_idx[i]])) / filtered_data[break_idx[i]] < pct_threshold:
+                            right_top += 1
+                        else:
+                            break
+                    for j in range(1, kneeNum_at_bottomTop):
+                        if abs((filtered_data[break_idx[i + 1]] - filtered_data[break_idx[i+1] - j])) / filtered_data[break_idx[i+1] - j] < pct_threshold:
+                            left_bottum += 1
+                        else:
+                            break
+
+                    labels[break_idx[i]:break_idx[i] + right_top] = label_type['top']
+                    labels[break_idx[i] + right_top:break_idx[i + 1] - left_bottum] = label_type['down']
+                    labels[break_idx[i+1]-left_bottum:break_idx[i+1]]=label_type['bottom']
     else:#filtered_data[break_idx[1]] - filtered_data[break_idx[0]] < 0:
+
         for i in range(len(break_idx) - 1):
+
             if i % 2 == 0:
-                labels[break_idx[i]:break_idx[i] + kneeNum_at_bottomTop] = label_type['top']
-                labels[break_idx[i] + kneeNum_at_bottomTop:break_idx[i + 1] - kneeNum_at_bottomTop] = label_type['down']
-                labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]] = label_type['bottom']
+                right_bottum, right_top, left_bottum, left_top = init_tupe
+
+                for j in range(1, kneeNum_at_bottomTop):
+                    if abs((filtered_data[break_idx[i] + j] - filtered_data[break_idx[i]])) / filtered_data[break_idx[i]] < pct_threshold:
+                        right_top += 1
+                    else:
+                        break
+                for j in range(1, kneeNum_at_bottomTop):
+                    if abs((filtered_data[break_idx[i + 1]] - filtered_data[break_idx[i+1] - j])) / filtered_data[break_idx[i+1] - j] < pct_threshold:
+                        left_bottum += 1
+                    else:
+                        break
+
+                labels[break_idx[i]:break_idx[i] + right_top] = label_type['top']
+                labels[break_idx[i] + right_top:break_idx[i + 1] - left_bottum] = label_type['down']
+                labels[break_idx[i + 1] - left_bottum:break_idx[i + 1]] = label_type['bottom']
+
             else:
-                labels[break_idx[i]:break_idx[i] + kneeNum_at_bottomTop] = label_type['bottom']
-                labels[break_idx[i] + kneeNum_at_bottomTop:break_idx[i + 1] - kneeNum_at_bottomTop] = label_type['up']
-                labels[break_idx[i+1]-kneeNum_at_bottomTop:break_idx[i+1]] = label_type['top']
+
+                right_bottum, right_top, left_bottum, left_top = init_tupe
+                for j in range(1, kneeNum_at_bottomTop):
+                    if (filtered_data[break_idx[i] + j] - filtered_data[break_idx[i]]) / filtered_data[break_idx[i]] < pct_threshold:
+                        right_bottum += 1
+                    else:
+                        break
+                for j in range(1, kneeNum_at_bottomTop):
+                    if (filtered_data[break_idx[i + 1]] - filtered_data[break_idx[i+1] - j]) / filtered_data[break_idx[i+1] - j] < pct_threshold:
+                        left_top += 1
+                    else:
+                       break
+
+                labels[break_idx[i]:break_idx[i] + right_bottum] = label_type['bottom']
+                labels[break_idx[i] + right_bottum:break_idx[i + 1] - left_top] = label_type['up']
+                labels[break_idx[i + 1] - left_top:break_idx[i + 1]] = label_type['top']
+
+    return labels
+
+def get_4labels_bottomTopUpDown_abslute(filtered_data, parameter_dict):
+    knee_idx = [0]
+    filtered_data = np.array(filtered_data)
+    data_len = filtered_data.shape[0]
+    for i in range(1,data_len):
+        if i == data_len-1:
+            knee_idx.append(i)
+        else:
+            if (filtered_data[i+1]-filtered_data[i])*(filtered_data[i]-filtered_data[i-1])<0:
+                knee_idx.append(i)
+            else:
+                pass
+
+    knee_close = filtered_data[knee_idx]
+    change_threshold = parameter_dict['change_threshold']
+    break_t, break_p = get3d.break_point(change_threshold, knee_idx, knee_close)
+    if not break_t[-1] == knee_idx[-1]:
+        break_t.append(knee_idx[-1])
+        break_p.append(knee_close[-1])
+
+
+    break_idx = np.array(break_t)
+    kneeNum_at_bottomTop = parameter_dict['kneeNum_at_bottomTop']
+    labels = np.zeros(data_len)
+    label_type = {'bottom':0, 'up':1,'top':2, 'down':3}
+    pct_threshold = 90
+    init_tupe = 0,0,0,0
+    if filtered_data[break_idx[1]] - filtered_data[break_idx[0]] > 0:
+        for i in range(len(break_idx)-1):
+
+                if i%2==0:
+                    right_bottum,right_top,left_bottum,left_top = init_tupe
+                    for j in range(1,kneeNum_at_bottomTop):
+                        if (filtered_data[break_idx[i] + j] - filtered_data[break_idx[i]])  < pct_threshold:
+                            right_bottum += 1
+                        else:
+                            break
+
+                    for j in range(1, kneeNum_at_bottomTop):
+                        if (filtered_data[break_idx[i+1]] - filtered_data[break_idx[i+1]-j])  < pct_threshold:
+                            left_top += 1
+                        else:
+                            break
+
+                    labels[break_idx[i]:break_idx[i]+right_bottum] = label_type['bottom']
+                    labels[break_idx[i]+right_bottum:break_idx[i+1]-left_top] = label_type['up']
+                    labels[break_idx[i+1]-left_top:break_idx[i+1]]= label_type['top']
+                else:
+                    right_bottum, right_top, left_bottum, left_top = init_tupe
+                    for j in range(1, kneeNum_at_bottomTop):
+                        if abs((filtered_data[break_idx[i]+j] - filtered_data[break_idx[i]])) < pct_threshold:
+                            right_top += 1
+                        else:
+                            break
+
+                    for j in range(1, kneeNum_at_bottomTop):
+                        if abs((filtered_data[break_idx[i + 1]] - filtered_data[break_idx[i+1] - j])) < pct_threshold:
+                            left_bottum += 1
+                        else:
+                            break
+
+                    labels[break_idx[i]:break_idx[i] + right_top] = label_type['top']
+                    labels[break_idx[i] + right_top:break_idx[i + 1] - left_bottum] = label_type['down']
+                    labels[break_idx[i+1]-left_bottum:break_idx[i+1]]=label_type['bottom']
+    else:#filtered_data[break_idx[1]] - filtered_data[break_idx[0]] < 0:
+
+        for i in range(len(break_idx) - 1):
+
+            if i % 2 == 0:
+                right_bottum, right_top, left_bottum, left_top = init_tupe
+
+                for j in range(1, kneeNum_at_bottomTop):
+                    if abs((filtered_data[break_idx[i] + j] - filtered_data[break_idx[i]])) < pct_threshold:
+                        right_top += 1
+                    else:
+                        break
+
+                for j in range(1, kneeNum_at_bottomTop):
+                    if abs((filtered_data[break_idx[i + 1]] - filtered_data[break_idx[i+1] - j])) < pct_threshold:
+                        left_bottum += 1
+                    else:
+                        break
+
+                labels[break_idx[i]:break_idx[i] + right_top] = label_type['top']
+                labels[break_idx[i] + right_top:break_idx[i + 1] - left_bottum] = label_type['down']
+                labels[break_idx[i + 1] - left_bottum:break_idx[i + 1]] = label_type['bottom']
+
+            else:
+
+                right_bottum, right_top, left_bottum, left_top = init_tupe
+                for j in range(1, kneeNum_at_bottomTop):
+                    if (filtered_data[break_idx[i] + j] - filtered_data[break_idx[i]]) < pct_threshold:
+                        right_bottum += 1
+                    else:
+                        break
+
+                for j in range(1, kneeNum_at_bottomTop):
+                    if (filtered_data[break_idx[i + 1]] - filtered_data[break_idx[i+1] - j])  < pct_threshold:
+                        left_top += 1
+                    else:
+                       break
+
+                labels[break_idx[i]:break_idx[i] + right_bottum] = label_type['bottom']
+                labels[break_idx[i] + right_bottum:break_idx[i + 1] - left_top] = label_type['up']
+                labels[break_idx[i + 1] - left_top:break_idx[i + 1]] = label_type['top']
 
     return labels
 

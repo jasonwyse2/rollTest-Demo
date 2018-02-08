@@ -5,7 +5,7 @@ day_field='date, open, high, low, close, pct_chg, volume, amt '
 minute_table = 'index_min'
 minute_field='time, open, high, low, close, pct_chg, volume, amt '
 minuteType_dict = {'minuteSimulative': 'minuteSimulative', 'minuteNoSimulative': 'minuteNoSimulative'}
-interval_dict = {'dayInterval':10, 'minuteInterval':20}
+interval_dict = {'dayInterval':60, 'minuteInterval':40}
 #indicator_minute_comb_list = ['day_comb_return_1', 'comb_return_2', 'minute_comb_return_1']
 def set_additional_parameters(hyper_parameter_dict, data_parameter_dict):
 
@@ -56,7 +56,7 @@ def config_dayOrMinute_parameter(hyper_parameter_dict, data_parameter_dict):
         data_parameter_dict['db_field'] = minute_field
         data_parameter_dict['time_field'] = 'time'
         data_parameter_dict['change_threshold'] = hyper_parameter_dict['minute_change_threshold']
-        data_parameter_dict['interval'] = interval_dict['minuteInterval']
+        data_parameter_dict['interval'] = interval_dict['dayInterval']
         data_parameter_dict['roll_forward'] = hyper_parameter_dict['minute_roll_forward']
         data_parameter_dict['rollTest_num'] = hyper_parameter_dict['minute_rollTest_num']
 
@@ -73,8 +73,8 @@ def config_taskType_parameter(hyper_parameter_dict,data_parameters_dict):
         data_parameters_dict['color_SharpGentleUpDown'] = ['red', 'green', 'violet', 'lightgreen']
 
     elif taskType == 'BottomTopUpDown':
-        data_parameters_dict['kneeNum_at_bottomTop'] = 3
-        data_parameters_dict['filterTimes_for_upDown'] = 1
+        data_parameters_dict['kneeNum_at_bottomTop'] = 2
+        data_parameters_dict['filterTimes_for_upDown'] = 0
         data_parameters_dict['label_BottomTopUpDown'] = ['bottom', 'up', 'top', 'down']
         data_parameters_dict['color_BottomTopUpDown'] = ['green', 'violet', 'red', 'lightgreen']
     else:

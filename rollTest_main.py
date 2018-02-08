@@ -24,30 +24,30 @@ if __name__ == '__main__':
     hyper_parameter_dict=\
         {'db_information':{'host':'192.168.1.11', 'port':3306, 'user':'zqfordinary', 'passwd':'Ab123456', 'db':'stock'},
 
-         'underlying': '000905', 'stock_type': stock_type['SH_index'],
+         'underlying': '000300', 'stock_type': stock_type['SH_index'],
         'dayOrMinute': 'day',  # ['day', 'minuteNoSimulative', 'minuteSimulative', 'alpha']
          'indicator_combination': 'dayComb1',  # ['dayComb1, minuteComb1']
          'alpha_csv_path': '/mnt/aidata/生成数据/Alpha扰动300/index_240_test.csv',
          'taskType':'BottomTopUpDown',  #[BottomTopUpDown, SharpGentleUpDown]
         'show_label':False,
 
-         'simulativeCloseSeries_num': 100,
-         'train_num': 10,
+         'simulativeCloseSeries_num': 1,
+         'train_num': 1,
 
         'project_directory':'/mnt/aidata/QuantitativePlatform/a-yaogong/',
 
-        'day_train_startTime':'20060101','day_train_endTime': '20160101',
-        'day_valid_startTime': '', 'day_valid_endTime': '20170101',
-         'day_test_startTime': '', 'day_test_endTime':'20170101',
-         'day_roll_forward': 30,  # one year contains 365 trade days
+        'day_train_startTime':'20060101','day_train_endTime': '20170101',
+        'day_valid_startTime': '', 'day_valid_endTime': '20170201',
+         'day_test_startTime': '20060101', 'day_test_endTime':'20070101',
+         'day_roll_forward': 1,  # the minumus unit is one months
          'day_rollTest_num': 1,
-         'dalily_change_threshold':0.015,
+         'dalily_change_threshold':0.01,
 
-         'minute_train_startTime':'201308010930', 'minute_train_endTime': '201601010930',
-         'minute_valid_startTime':'', 'minute_valid_endTime' :'201601050930',
-         'minute_test_startTime':'', 'minute_test_endTime': '201601050930',
+         'minute_train_startTime':'201308010930', 'minute_train_endTime': '201802060930',
+         'minute_valid_startTime':'', 'minute_valid_endTime' :'201802061428',
+         'minute_test_startTime':'', 'minute_test_endTime': '',
          'minute_roll_forward': 242,  # one day contains 241 trade minutes
-         'minute_rollTest_num': 2,
+         'minute_rollTest_num': 1,
          'minute_change_threshold': 0.001,
          }
 
@@ -73,8 +73,6 @@ if __name__ == '__main__':
         dataFile_directoryName='data/',
         dataFile_postfix='.csv',
         task_description='', # it's been set in config_other_parameter(), parameter_config.py
-
-
 
     )
     config.set_additional_parameters(hyper_parameter_dict, data_parameter_obj._args)
