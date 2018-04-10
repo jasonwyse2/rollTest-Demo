@@ -76,13 +76,13 @@ def get_indicator_day_comb2(raw_data_df,indicator_combination=''):
     for v in indicator_list:
         mat = np.column_stack((mat, v))
 
-    mat1 = PolynomialFeatures(2).fit_transform(mat[87:, :])
-    mat0 = np.zeros((87, mat1.shape[1]))
-    mat0[np.where(mat0 == 0)] = 'NaN'
-    mat2 = np.vstack((mat0, mat1))
-    print(mat2.shape)
+    # mat1 = PolynomialFeatures(2).fit_transform(mat[87:, :])
+    # mat0 = np.zeros((87, mat1.shape[1]))
+    # mat0[np.where(mat0 == 0)] = 'NaN'
+    # mat2 = np.vstack((mat0, mat1))
+    # print(mat2.shape)
 
-    return mat2[:, 1:41]
+    return mat
 
 def get_indicator_minute_comb1(raw_data_df,indicator_combination=''):
     '''get all factors when n minutes as the period'''
@@ -200,7 +200,7 @@ def get_indicator_minute_comb1(raw_data_df,indicator_combination=''):
     # mat = np.column_stack((mat, MA120))
     # np.savetxt('1316.csv', mat, delimiter = ',')
     # 25
-    return mat
+    # return mat
 
 
 if __name__ == '__main__':

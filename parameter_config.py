@@ -39,7 +39,7 @@ def config_dayOrMinute_parameter(hyper_parameter_dict, data_parameter_dict):
         data_parameter_dict['roll_forward'] = hyper_parameter_dict['day_roll_forward']
         data_parameter_dict['rollTest_num'] = hyper_parameter_dict['day_rollTest_num']
 
-    elif dayOrMinute in minuteType_dict:
+    elif dayOrMinute in minuteType_dict or dayOrMinute=='alphaMinute':
 
         data_parameter_dict['train_startTime'] = hyper_parameter_dict['minute_train_startTime']
         data_parameter_dict['train_endTime'] = hyper_parameter_dict['minute_train_endTime']
@@ -74,7 +74,7 @@ def config_taskType_parameter(hyper_parameter_dict,data_parameters_dict):
 
     elif taskType == 'BottomTopUpDown':
         data_parameters_dict['kneeNum_at_bottomTop'] = 2
-        data_parameters_dict['filterTimes_for_upDown'] = 0
+        data_parameters_dict['filterTimes_for_upDown'] = 1
         data_parameters_dict['label_BottomTopUpDown'] = ['bottom', 'up', 'top', 'down']
         data_parameters_dict['color_BottomTopUpDown'] = ['green', 'violet', 'red', 'lightgreen']
     else:

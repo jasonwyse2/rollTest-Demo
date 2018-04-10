@@ -39,10 +39,10 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
             plt.title(title_list[i],fontsize=20)
             plt.plot(range(close.shape[0]), filtered_close)
             plt.plot(range(close.shape[0]), close)
-            plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c=color[0], label=label[0], s=point_size)
-            plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c=color[1], label=label[1], s=point_size)
-            plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c=color[2], label=label[2], s=point_size)
-            plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c=color[3], label=label[3], s=point_size)
+            plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', linewidths=0, c=color[0], label=label[0], s=point_size)
+            plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', linewidths=0, c=color[1], label=label[1], s=point_size)
+            plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', linewidths=0, c=color[2], label=label[2], s=point_size)
+            plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', linewidths=0, c=color[3], label=label[3], s=point_size)
 
             plt.legend(fontsize=20)
             interval_idx_list = []
@@ -68,10 +68,10 @@ def save_figure_pdf(filtered_close, close, date, y, fig_path,
         plt.figure(figsize=(30, 15))
         plt.plot(range(close.shape[0]), filtered_close)
         plt.plot(range(close.shape[0]), close)
-        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', c=color[0], label=label[0], s=point_size)
-        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', c=color[1], label=label[1], s=point_size)
-        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', c=color[2], label=label[2], s=point_size)
-        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', c=color[3], label=label[3], s=point_size)
+        plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', linewidths=0, c=color[0], label=label[0], s=point_size)
+        plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', linewidths=0, c=color[1], label=label[1], s=point_size)
+        plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', linewidths=0, c=color[2], label=label[2], s=point_size)
+        plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', linewidths=0, c=color[3], label=label[3], s=point_size)
         #plt.legend(prop=myfont)
         plt.legend(fontsize=20)
         interval_idx_list = []
@@ -94,10 +94,10 @@ def show_fig(labels,filter_data_for_use,close_for_use,label = ['sharp up','sharp
     point_size = 20
     plt.plot(range(filter_data_for_use.shape[0]),filter_data_for_use)
     plt.plot(range(filter_data_for_use.shape[0]),close_for_use)
-    plt.scatter(np.where(labels == 0)[0],close_for_use[np.where(labels==0)[0]],marker='o',c='red',label=label[0],s=point_size)
-    plt.scatter(np.where(labels == 1)[0], close_for_use[np.where(labels == 1)[0]], marker='o',c='green',label=label[1],s=point_size)
-    plt.scatter(np.where(labels == 2)[0], close_for_use[np.where(labels == 2)[0]], marker='o', c='violet', label=label[2], s=point_size)
-    plt.scatter(np.where(labels == 3)[0], close_for_use[np.where(labels == 3)[0]], marker='o', c='lightgreen', label=label[3], s=point_size)
+    plt.scatter(np.where(labels == 0)[0],close_for_use[np.where(labels==0)[0]],marker='o', linewidths=0, c='red',label=label[0],s=point_size)
+    plt.scatter(np.where(labels == 1)[0], close_for_use[np.where(labels == 1)[0]], marker='o', linewidths=0, c='green',label=label[1],s=point_size)
+    plt.scatter(np.where(labels == 2)[0], close_for_use[np.where(labels == 2)[0]], marker='o', linewidths=0, c='violet', label=label[2], s=point_size)
+    plt.scatter(np.where(labels == 3)[0], close_for_use[np.where(labels == 3)[0]], marker='o', linewidths=0, c='lightgreen', label=label[3], s=point_size)
     plt.legend()
     plt.show()
 
@@ -404,7 +404,7 @@ def currentTime_forward_delta(currentTime, deltaTime, parameter_dict):
 
         # delta = datetime.timedelta(deltaTime)
         # cutTime = (curr + delta).strftime(time_format)
-    elif dayOrMinute in parameter_dict['minuteType_dict']:
+    elif dayOrMinute in parameter_dict['minuteType_dict'] or dayOrMinute=='alphaMinute':
         df_end_extraTradeDays = get_dataframe_NTradeDays_after_endTime(currentTime, deltaTime, parameter_dict)
         time_field = parameter_dict['time_field']
         cutTime = str(np.array(df_end_extraTradeDays[time_field])[-1])

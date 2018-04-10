@@ -57,7 +57,8 @@ class Your_Data(base.Data):
         data_parameter_dict['dataType'] = dataType
         startTime, endTime = tool.get_start_end(data_parameter_dict)
         raw_df = pd.read_csv(csv_path)
-        date_list = np.array(raw_df.iloc[:, 0].tolist()).astype(np.str)
+        date_list = np.array(raw_df.iloc[:, 0].tolist()).astype(np.int).astype(np.str)
+        # date_list = np.array(map(lambda v:str(int(v)) ,raw_df.iloc[:,0].tolist()))
         #print('%s date_list'%dataType, date_list[:5])
         start_idx = np.where(date_list >= startTime)[0][0]
         end_idx = np.where(date_list < endTime)[0][-1]
@@ -67,7 +68,7 @@ class Your_Data(base.Data):
             raise Exception(
                 '%s end_time %s must be earlyer than %s' % (dataType, endTime, raw_df.ix[raw_df.shape[0] - 3, 0]))
         if dataType == 'train' or dataType == 'valid':
-            raw_sample = raw_df.iloc[:, 1:]
+            raw_sample = raw_df.iloc[:, 1:11]
         elif dataType == 'test': # the 0-th column is the time field, we need it to draw figures
             raw_sample = raw_df
         raw_sample_mat = raw_sample.iloc[
@@ -85,6 +86,14 @@ class Your_Data(base.Data):
             dataToSave_df = raw_data_df
             raw_data_mat = raw_data_df.as_matrix()
             [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(raw_data_mat, data_parameter_dict)
+
+
+        elif dayOrMinute == 'alphaMinute':
+            raw_data_df = self.__read_mat_from_csv(dataType)
+            dataToSave_df = raw_data_df
+            raw_data_mat = raw_data_df.as_matrix()
+            [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(raw_data_mat, data_parameter_dict)
+
         elif dayOrMinute == 'day' or dayOrMinute == minuteType_dict['minuteSimulative']:
             raw_data_df = tool.get_daily_data(data_parameter_dict)
             simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, data_parameter_dict)
@@ -130,6 +139,10 @@ class Your_Data(base.Data):
             df_time_field = df[time_field]
             self._test_x_date = df_time_field[extra_front:-extra_end]
         elif dayOrMinute == 'alpha':
+            df = self.__read_mat_from_csv(dataType='test')
+            self._test_x_date = np.array(df.iloc[extra_front:-extra_end,0].tolist()).astype(np.str)
+            raw_data_df = pd.DataFrame(df.iloc[:,1])
+        elif dayOrMinute == 'alphaMinute':
             df = self.__read_mat_from_csv(dataType='test')
             self._test_x_date = np.array(df.iloc[extra_front:-extra_end,0].tolist()).astype(np.str)
             raw_data_df = pd.DataFrame(df.iloc[:,1])

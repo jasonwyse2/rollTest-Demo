@@ -220,7 +220,7 @@ def get_tag_bottomTopUpDown(close, parameter_dict):
     tag= get_4labels_bottomTopUpDown(filtered_data, parameter_dict)
     return tag, np.array(filtered_data)
 
-def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
+def get_4labels_bottomTopUpDown_backup(filtered_data, parameter_dict):
     knee_idx = [0]
     filtered_data = np.array(filtered_data)
     data_len = filtered_data.shape[0]
@@ -433,7 +433,7 @@ def get_4labels_bottomTopUpDown_abslute(filtered_data, parameter_dict):
 
     return labels
 
-def get_4labels_bottomTopUpDown_backup(filtered_data, parameter_dict):
+def get_4labels_bottomTopUpDown(filtered_data, parameter_dict):
     knee_idx = [0]
     filtered_data = np.array(filtered_data)
     data_len = filtered_data.shape[0]
