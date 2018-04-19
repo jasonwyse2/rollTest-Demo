@@ -3,8 +3,12 @@ import pandas as pd
 import numpy as np
 import scipy.signal as signal
 import datalib.util.get_3d_data_set as get3d
+from matplotlib import pyplot
 import tool
 from indicator_config import get_indicator_handle
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
 slope_type = {'sharp':5,'gentle':4}
 trend_type = {'up': 1, 'down': 0}
 day_field='date, open, high, low, close, pct_chg, volume, amt '
@@ -96,6 +100,8 @@ def get_x_y(raw_data_df, parameter_dict):
         x, y, filtered_close_for_use, close_for_use = get_x_y_sharpGentleUpDown(raw_data_df, parameter_dict)
     elif fourlabelType == 'BottomTopUpDown':
         x, y, filtered_close_for_use, close_for_use = get_x_y_bottomTopUpDown(raw_data_df, parameter_dict)
+    elif fourlabelType == 'Volatility':
+        x, y, filtered_close_for_use, close_for_use = get_x_y_volatility(raw_data_df, parameter_dict)
 
     return [x, y, filtered_close_for_use, close_for_use]
 
@@ -209,6 +215,67 @@ def get_x_y_sharpGentleUpDown(raw_data_df, parameter_dict):
     filter_data_for_use, close_for_use = filter_data_for_use[:-extraTradeDays], close_for_use[:-extraTradeDays]
     print('x,y,close,filtered_close', x.shape, y.shape, close_for_use.shape, filter_data_for_use.shape)
     return x, y, filter_data_for_use, close_for_use
+
+def get_tag_volatility(close, parameter_dict):
+    volatility_window = parameter_dict['volatility_window']
+    global_parameter_dict = parameter_dict['global_parameter_dict']
+    close_volatility = []
+    for i in range(len(close)):
+        close_range = close[i-volatility_window:i+volatility_window]
+        close_volatility.append(np.var(close_range))
+    # pyplot.hist(tag,bins=100)
+    # pyplot.show()
+    # remove 'NaN' value
+    close_volatility = close_volatility[volatility_window:-volatility_window]
+    close_volatility = np.array(close_volatility)
+    # figure1 = plt.figure()
+    # ax1 = figure1.add_subplot(211)
+    # ax2 = figure1.add_subplot(212)
+    # n, bins, patchs = ax1.hist(close_volatility, bins=1000, color='red', normed=1, cumulative=True)
+    # # plt.plot(train_y_ndarray)
+    # # plt.xlim(0,10000)
+    # n, bins, patchs = ax2.hist(close_volatility, bins=1000, color='red', normed=0, )
+
+    nb_classes = parameter_dict['nb_classes']
+    estimator = KMeans(n_clusters=nb_classes)
+    estimator.fit(close_volatility.reshape(-1, 1))
+    label_pred = estimator.labels_
+    centroids = estimator.cluster_centers_
+    inertia = estimator.inertia_
+
+    labels = list(set(label_pred))
+    last_element_list = []
+    clusters = []
+    idx_clusters = []
+    for i in range(len(labels)):
+        label_i_idx = label_pred == labels[i]
+        tmp = close_volatility[label_i_idx]
+        tmp = np.sort(tmp)
+        # print tmp[-1]
+        last_element_list.append(tmp[-1])
+        clusters.append(tmp.tolist())
+        idx_clusters.append(label_i_idx)
+
+    global_parameter_dict['last_element_list']= last_element_list
+    idx_array = np.argsort(np.array(last_element_list))
+    clusters_elementSorted_list = []
+    idx_clusters_list = []
+    lastElementOfCluster_byOrder_list = []
+    for i in range(len(idx_array)):
+        clusters_elementSorted_list.append(clusters[idx_array[i]])
+        idx_clusters_list.append(idx_clusters[idx_array[i]])
+        lastElementOfCluster_byOrder_list.append(clusters[idx_array[i]][-1])
+        # print clusters[idx_array[i]][0:10]
+        # print np.sort(train_y_ndarray[idx_clusters[idx_array[i]]])[0:10]
+    global_parameter_dict['lastElementOfCluster_byOrder_list'] = lastElementOfCluster_byOrder_list
+    train_y_ndarray = label_pred  # initialize real label
+    for i in range(len(idx_array)):
+        train_y_ndarray[idx_clusters_list[i]] = i
+
+    train_y_ndarray1 = np.concatenate((np.zeros(volatility_window), train_y_ndarray,np.zeros(volatility_window)),axis=0).astype(np.int32)
+    #add 'Nan' value
+
+    return train_y_ndarray1
 
 def get_tag_bottomTopUpDown(close, parameter_dict):
     window_size = parameter_dict['filter_windowSize']
@@ -608,7 +675,55 @@ def get_x_y_bottomTopUpDown(raw_data_df, parameter_dict):#BottomTopUpDown
     print('x,y,close,filtered_close',x.shape,labels.shape,close_for_use.shape, filter_data_for_use.shape)
 
     return x, labels.astype(np.int), filter_data_for_use, close_for_use
+def get_x_y_volatility(raw_data_df, parameter_dict):
+    dayOrMinute = parameter_dict['dayOrMinute']
+    minuteType_dict = parameter_dict['minuteType_dict']
+    dataType = parameter_dict['dataType']
+    if dayOrMinute == minuteType_dict['minuteNoSimulative']:
+        close = np.array(raw_data_df['close'])
+    else:
+        close = np.array(raw_data_df.iloc[:, 0])
+    # close = np.diff(close) / close[:-1]
+    if dataType=='train':
+        raw_y = get_tag_volatility(close, parameter_dict)
+    else:
+        raw_y = get_tag_volatility_by_clusterRange(close, parameter_dict)
 
+    indicator_combination = parameter_dict['indicator_combination']
+    get_indicators_handle = get_indicator_handle(indicator_combination)
+    raw_x = get_indicators_handle(raw_data_df)
+
+    NTradeDays_for_indicatorCalculation = parameter_dict['NTradeDays_for_indicatorCalculation']
+    extraTradeDays_afterEndTime = parameter_dict['extraTradeDays_afterEndTime']
+
+    x = raw_x[NTradeDays_for_indicatorCalculation - 1:-extraTradeDays_afterEndTime]
+    labels = raw_y[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
+    close_for_use = close[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
+    filter_data_for_use = close[NTradeDays_for_indicatorCalculation:-extraTradeDays_afterEndTime]
+
+    return x, labels.astype(np.int), filter_data_for_use, close_for_use
+def get_tag_volatility_by_clusterRange(close, parameter_dict):
+    volatility_window = parameter_dict['volatility_window']
+    global_parameter_dict = parameter_dict['global_parameter_dict']
+    lastElementOfCluster_byOrder_list=global_parameter_dict['lastElementOfCluster_byOrder_list']
+    close_volatility = []
+    for i in range(len(close)):
+        close_range = close[i - volatility_window:i + volatility_window]
+        close_volatility.append(np.var(close_range))
+
+    close_volatility = close_volatility[volatility_window:-volatility_window]
+    # initialize label array
+    train_y_ndarray = close_volatility
+    for i in range(len(close_volatility)):
+        for j in range(len(lastElementOfCluster_byOrder_list)):
+            if close_volatility[i]<=lastElementOfCluster_byOrder_list[j]:
+                train_y_ndarray[i] = j
+                break
+
+    train_y_ndarray1 = np.concatenate((np.zeros(volatility_window), train_y_ndarray, np.zeros(volatility_window)),
+                                      axis=0).astype(np.int32)
+
+    return train_y_ndarray1
 def get_balanced_datasets(x,y,parameter_dict):
     nb_class = parameter_dict['nb_classes']
     print 'nb_classes',nb_class

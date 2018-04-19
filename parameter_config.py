@@ -77,6 +77,10 @@ def config_taskType_parameter(hyper_parameter_dict,data_parameters_dict):
         data_parameters_dict['filterTimes_for_upDown'] = 1
         data_parameters_dict['label_BottomTopUpDown'] = ['bottom', 'up', 'top', 'down']
         data_parameters_dict['color_BottomTopUpDown'] = ['green', 'violet', 'red', 'lightgreen']
+    elif taskType == 'Volatility':
+        data_parameters_dict['volatility_window'] = hyper_parameter_dict['volatility_window']
+        data_parameters_dict['label_Volatility'] = ['low', 'medium', 'high']
+        data_parameters_dict['color_Volatility'] = ['green', 'violet', 'red']
     else:
         raise Exception('unknown "taskType":%s' % taskType)
 
@@ -95,6 +99,10 @@ def config_other_parameter(hyper_parameter_dict, data_parameters_dict):
     windowSize = data_parameters_dict['filter_windowSize']
     data_parameters_dict['extraTradeDays_afterEndTime'] = int(windowSize / 2) if windowSize % 2 == 1 else int(
         windowSize / 2) - 1
+
+    taskType = hyper_parameter_dict['taskType']
+    if taskType == 'Volatility':
+        data_parameters_dict['extraTradeDays_afterEndTime'] = hyper_parameter_dict['volatility_window']
 if __name__ == '__main__':
     minuteType_dict = {'a': 'ab', 'b': 'bc'}
     print 'ab' in minuteType_dict

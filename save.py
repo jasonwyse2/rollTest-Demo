@@ -70,6 +70,9 @@ def save_figure(data_parameter_obj, roll_result_dict):
     elif fourlabelType == 'BottomTopUpDown':
         color_list = data_parameter_dict['color_BottomTopUpDown']
         label_list = data_parameter_dict['label_BottomTopUpDown']
+    elif fourlabelType == 'Volatility':
+        color_list = data_parameter_dict['color_Volatility']
+        label_list = data_parameter_dict['label_Volatility']
     interval = data_parameter_dict['interval']
     tool.save_figure_pdf_truePredictTogether(test_filtered_close_all, test_close_all, test_date_all, test_y_TruePredict,
                                              true_tag_figure_path, code_wind, color=color_list, label=label_list, interval=interval)

@@ -15,7 +15,8 @@ import tool as tool
 from engine import index_model as im
 import keras
 import json
-
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 class Your_Data(base.Data):
     '''
         write your own data process
@@ -98,7 +99,6 @@ class Your_Data(base.Data):
             raw_data_df = tool.get_daily_data(data_parameter_dict)
             simulativeCloseSeries_df = tool.simulative_close_generator(raw_data_df, data_parameter_dict)
             dataToSave_df = simulativeCloseSeries_df
-
             simulative_sample_matrix = simulativeCloseSeries_df.as_matrix()
             [x_list, y_list, filtered_close_list, close_list] = get_x_y_repeat(simulative_sample_matrix, data_parameter_dict)
         elif dayOrMinute == minuteType_dict['minuteNoSimulative']: # it has no simulative data

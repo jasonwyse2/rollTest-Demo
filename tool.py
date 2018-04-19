@@ -36,13 +36,17 @@ def save_figure_pdf_truePredictTogether(filtered_close, close, date, y_list, fig
             ax = plt.subplot(figure_position[i])
             plt.sca(ax)
             y = y_list[i]
+            num_class = len(set(y))
             plt.title(title_list[i],fontsize=20)
             plt.plot(range(close.shape[0]), filtered_close)
             plt.plot(range(close.shape[0]), close)
-            plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', linewidths=0, c=color[0], label=label[0], s=point_size)
-            plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', linewidths=0, c=color[1], label=label[1], s=point_size)
-            plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', linewidths=0, c=color[2], label=label[2], s=point_size)
-            plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', linewidths=0, c=color[3], label=label[3], s=point_size)
+            for j in range(num_class):
+                plt.scatter(np.where(y == j)[0], close[np.where(y == j)[0]], marker='o', linewidths=0, c=color[j],
+                            label=label[j], s=point_size)
+            # plt.scatter(np.where(y == 0)[0], close[np.where(y == 0)[0]], marker='o', linewidths=0, c=color[0], label=label[0], s=point_size)
+            # plt.scatter(np.where(y == 1)[0], close[np.where(y == 1)[0]], marker='o', linewidths=0, c=color[1], label=label[1], s=point_size)
+            # plt.scatter(np.where(y == 2)[0], close[np.where(y == 2)[0]], marker='o', linewidths=0, c=color[2], label=label[2], s=point_size)
+            # plt.scatter(np.where(y == 3)[0], close[np.where(y == 3)[0]], marker='o', linewidths=0, c=color[3], label=label[3], s=point_size)
 
             plt.legend(fontsize=20)
             interval_idx_list = []
@@ -119,21 +123,14 @@ def confuse_matrix(y_true, y_predict, parameter_dict):
         real_array = np.row_stack([confuse[0, :] + confuse[2, :], confuse[1, :] + confuse[3, :]])
         upDown_confuseMatrix = np.column_stack([real_array[:, 0] + real_array[:,2], real_array[:, 1] + real_array[:,3]])
         upDown_accuracy = np.diag(upDown_confuseMatrix).astype(np.float) / np.sum(upDown_confuseMatrix, axis=0)
+    elif fourlabelType == 'Volatility':
+        label_list = parameter_dict['label_Volatility']
     else:
         raise Exception('unknown taskType:%s' % fourlabelType)
     index_label_list = ['real-' + v for v in label_list]
     column_label_list = ['pred-' + v for v in label_list]
     confuse_matrix.index = index_label_list
     confuse_matrix.columns = column_label_list
-    # column_list = []
-    # for i in range(confuse_matrix.shape[1]):
-    #     column_list.append('pred ' + str(i))
-    # confuse_matrix.columns = column_list
-    # index_list = []
-    # for i in range(confuse_matrix.shape[0]):
-    #     index_list.append('real ' + str(i))
-    # confuse_matrix.index = index_list
-
 
     predict_accuracy_per_class = np.diag(confuse).astype(np.float) / np.sum(confuse, axis=0)
     #### remove 'nan' value in 'predict_accuracy_per_class'
@@ -143,10 +140,10 @@ def confuse_matrix(y_true, y_predict, parameter_dict):
     startTime, endTime = get_start_end(parameter_dict)
     confuse_matrix.loc['accuracy(%s-%s)'%(startTime,endTime)] = predict_accuracy_per_class
     average_accuracy_allClass = np.sum(np.diag(confuse).astype(np.float))/np.sum(confuse)
-
-    confuse_matrix.loc['average'] = [average_accuracy_allClass,np.nan,np.nan,np.nan]
-    confuse_matrix.loc['binary-up'] = [upDown_accuracy[0],np.nan,np.nan,np.nan]
-    confuse_matrix.loc['binary-down'] = [upDown_accuracy[1],np.nan,np.nan,np.nan]
+    if fourlabelType == 'BottomTopUpDown' or fourlabelType == 'SharpGentleUpDown':
+        confuse_matrix.loc['average'] = [average_accuracy_allClass,np.nan,np.nan,np.nan]
+        confuse_matrix.loc['binary-up'] = [upDown_accuracy[0],np.nan,np.nan,np.nan]
+        confuse_matrix.loc['binary-down'] = [upDown_accuracy[1],np.nan,np.nan,np.nan]
     return confuse_matrix
 
 def make_directory(dir):
@@ -364,7 +361,8 @@ def simulative_close_generator(raw_data_df, parameter_dict):
     high_frequence = close_price - close_filtered
     count = 0
     simulativeNoiseSerise_list = []
-    while count < simulativeCloseSeries_num:
+    simulativeNoiseSerise_list.append(close_price)
+    while count < simulativeCloseSeries_num-1:
         count += 1
         simulativeNoiseSerise = []
         #seed = int(time.clock())
